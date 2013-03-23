@@ -47,7 +47,7 @@ class Navigation
 {
 public:
     Navigation();
-    void DistanceTravelled(float distance, int power);
+    void DistanceTravelled(float distance, float power);
     void DriveToWall(float power);
     void Right90Turn();
     void Left90Turn();
@@ -271,13 +271,36 @@ Navigation::Navigation()
 }
 
 
-void Navigation::DistanceTravelled(float distance, int power)
+void Navigation::DistanceTravelled(float distance, float power)
 {
 
 }
 void Navigation::DriveToWall(float power)
 {
+    int a=0;
+    while (a==0)
+    {
+        if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == false)
+        {
+            Navigation::StopMotors();
+            a=1;
+        }
+        else if (FrontLeft_bumpswitch.Value() == true && FrontRight_bumpswitch.Value() == true)
+        {
+            Navigation::DriveForward(power);
+        }
+        else if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == true)
+        {
+            Left_Motor.Stop();
+            Right_Motor.SetPower((int)power);
+        }
+        else if (FrontLeft_bumpswitch.Value() == true && FrontRight_bumpswitch.Value() == false)
+        {
+            Right_Motor.Stop();
+            Left_Motor.SetPower((int)power);
+        }
 
+    }
 }
 void Navigation::Right90Turn()
 {

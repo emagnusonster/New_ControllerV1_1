@@ -6,7 +6,6 @@
 //Define Statements
 #define forward  1
 #define backward  -1
-#define CDS_Threshold .1417
 #define left_motor FEHMotor::Motor3
 #define right_motor FEHMotor::Motor1
 
@@ -16,6 +15,7 @@ DigitalInputPin FrontLeft_bumpswitch( FEHIO::P2_0 );
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor3), Right_Motor(FEHMotor::Motor1);
+float CDS_Threshold=.14;
 
 
 class StartUp
@@ -167,7 +167,32 @@ void StartUp::Light_Start()
 
 void StartUp::CDSCell()
 {
-
+    int a=0;
+    float lower_value, upper_value;
+    LCD.WriteLine("Place robot on course and Turn Light Off");
+    while (a==0)
+    {
+        LCD.WriteLine("Press left button to set upper bound");
+        if (buttons.LeftPressed())
+        {
+            upper_value = cds_cell.Value();
+            a=1;
+        }
+    }
+    LCD.WriteLine("Please turn the light on");
+    a=0;
+    while (a==0)
+    {
+        LCD.WriteLine("Press left button to set lower bound");
+        if (buttons.LeftPressed())
+        {
+            lower_value = cds_cell.Value();
+            a=1;
+        }
+    }
+    CDS_Threshold = (upper_value+lower_value)/2;
+    LCD.WriteLine("Value of threshold is");
+    LCD.WriteLine(CDS_Threshold);
 }
 
 

@@ -2,6 +2,8 @@
 #include <FEHIO.h>
 #include <FEHUtility.h>
 #include <FEHMotor.h>
+#include <FEHServo.h>
+#include <FEHBuzzer.h>
 
 //Define Statements
 #define forward  1
@@ -16,6 +18,8 @@ DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_0);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor3), Right_Motor(FEHMotor::Motor1);
+FEHEncoder Left_Encoder(FEHIO::P0_1);
+FEHEncoder Right_Encoder(FEHIO::P2_1);
 float CDS_Threshold=.14;
 float Line_Following_Threshold;
 
@@ -74,6 +78,34 @@ int main(void)
 StartUp::StartUp()
 {
 
+}
+
+void StartUp::Check_Left_Encoder()
+{
+    int a;
+    Left_Encoder.ResetCounts();
+    Left_Motor.SetPower(50);
+    a=TimeNow();
+    while (TimeNow()-a<=5)
+    {
+        LCD.WriteLine(Left_Encoder.Counts());
+    }
+    Left_Motor.Stop();
+    Left_Encoder.ResetCounts();
+}
+
+void StartUp::Check_Right_Encoder()
+{
+    int a;
+    Right_Encoder.ResetCounts();
+    Right_Motor.SetPower(50);
+    a=TimeNow();
+    while (TimeNow()-a<=5)
+    {
+        LCD.WriteLine(Right_Encoder.Counts());
+    }
+    Right_Motor.Stop();
+    Right_Encoder.ResetCounts();
 }
 
 void StartUp::RunAll()

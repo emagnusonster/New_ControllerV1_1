@@ -10,12 +10,14 @@
 #define right_motor FEHMotor::Motor1
 
 //Global Variables
-DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_0 );
-DigitalInputPin FrontLeft_bumpswitch( FEHIO::P2_0 );
+DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
+DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
+DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_0);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor3), Right_Motor(FEHMotor::Motor1);
 float CDS_Threshold=.14;
+float Line_Following_Threshold;
 
 
 class StartUp
@@ -195,6 +197,39 @@ void StartUp::CDSCell()
     LCD.WriteLine(CDS_Threshold);
 }
 
+void StartUp::OptoCheck()
+{
+    int a=0;
+    float lower_value, upper_value;
+    LCD.WriteLine("Place optosensor over normal section of course");
+    LCD.WriteLine("Press left button to set upper reflectivity value");
+    while (a==0)
+    {
+        if (buttons.LeftPressed())
+        {
+            upper_value = LineFollowingOptosensor.Value();
+            a=1;
+        }
+
+    }
+    LCD.WriteLine("Place optosensor over line");
+    LCD.WriteLine("Press left button to set lower reflectivity value");
+    a=0;
+    while (a==0)
+    {
+        if (buttons.LeftPressed())
+        {
+            lower_value = LineFollowingOptosensor.Value();
+            a=1;
+        }
+
+    }
+    Line_Following_Threshold = (upper_value+lower_value)/2;
+    LCD.WriteLine("Value of threshold is");
+    LCD.WriteLine(Line_Following_Threshold);
+
+
+}
 
 //Start Function Definitions for Navigation Class
 Navigation::Navigation()
@@ -202,10 +237,7 @@ Navigation::Navigation()
     forward_calibration = 1;
     reverse_calibration = 1;
 }
-void StartUp::OptoCheck()
-{
 
-}
 
 void Navigation::DistanceTravelled(float distance, int power)
 {

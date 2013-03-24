@@ -1,3 +1,8 @@
+//Last edited by: Eric Magnuson
+//Last date edited: 3/23/13
+//Version Number: 2.1
+//Tested since last update: No
+
 //Libraries to be included
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -35,14 +40,14 @@ class StartUp
     //Public Elements
 public:
     StartUp();
-    void SwitchCheck();
-    void CDSCell();
-    void RunAll();
-    void Check_Right_Encoder();
-    void Check_Left_Encoder();
-    void Button_Start();
-    void OptoCheck();
-    void Light_Start();
+    void SwitchCheck(); //Coded, commented
+    void CDSCell(); //Coded, commented
+    void RunAll(); //Coded, commented
+    void Check_Right_Encoder();//Coded, commented
+    void Check_Left_Encoder();//Coded, commented
+    void Button_Start();//Coded, commented
+    void OptoCheck();//Coded, commented
+    void Light_Start();//Coded, commented
     float Optosensor_threshold;
 private:
 
@@ -54,17 +59,17 @@ class Navigation
 {
 public:
     Navigation();
-    void DistanceTravelled(float distance, float power, int direction);
-    void DriveToWall(float power);
-    void DriveToLine(float power);
-    void Right90Turn();
-    void Left90Turn();
-    void RightTurn(float angle);
-    void LeftTurn(float angle);
-    void DriveForward(float power);
-    void DriveBackward(float power);
-    void StopMotors();
-    void GrabSled();
+    void DistanceTravelled(float distance, float power, int direction);//Coded, commented
+    void DriveToWall(float power);//Coded, commented
+    void DriveToLine(float power);//Coded, commented
+    void Right90Turn();//Not Coded Yet
+    void Left90Turn();//Not Coded Yet
+    void RightTurn(float angle);//Not Coded Yet
+    void LeftTurn(float angle);//Not Coded Yet
+    void DriveForward(float power);//Coded, commented
+    void DriveBackward(float power);//Coded, commented
+    void StopMotors();//Coded, commented
+    void GrabSled();//Not Coded Yet
 private:
     float forward_calibration, reverse_calibration;
 };
@@ -91,51 +96,84 @@ StartUp::StartUp()
 //This function checks the left encoder
 void StartUp::Check_Left_Encoder()
 {
+    //Declare Variables
     int a;
+
+    //Reset Encoder Counts
     Left_Encoder.ResetCounts();
+
+    //Turn Motor on
     Left_Motor.SetPower(50);
+
+    //Start Timing
     a=TimeNow();
+
+    //Run loop for 5 seconds
     while (TimeNow()-a<=5)
     {
+        //Print encoder counts
         LCD.WriteLine(Left_Encoder.Counts());
     }
+
+    //Stop Motors
     Left_Motor.Stop();
-    Left_Encoder.ResetCounts();
 }
 
 //This function checks the right encoder
 void StartUp::Check_Right_Encoder()
 {
+    //Declare Variables
     int a;
+
+    //Reset Encoder
     Right_Encoder.ResetCounts();
+
+    //Start Motor
     Right_Motor.SetPower(50);
+
+    //Start Timing
     a=TimeNow();
+
+    //Run loop for 5 seconds
     while (TimeNow()-a<=5)
     {
+        //Print encoder counts
         LCD.WriteLine(Right_Encoder.Counts());
     }
+
+    //Stop motor
     Right_Motor.Stop();
-    Right_Encoder.ResetCounts();
 }
 
 //This function asks the user if calibration is needed, and then runs the course as necessary
 void StartUp::RunAll()
 {
-
+    //Declare variables
     int a=0;
+
+    //Ask User for input
     LCD.WriteLine("Do you need to calibrate?\nPress Left for yes, Right for No");
+
+    //Loop until user inputs their selection
     while (a==0)
     {
+        //Calibration Condition
         if (buttons.LeftPressed())
         {
+            //Start Calibration functions
             StartUp::CDSCell();
+            StartUp::OptoCheck();
+
+            //Exit Loop
             a=1;
         }
+        //Start Run condition
         if (buttons.RightPressed())
         {
             a=1;
         }
     }
+    //Start Functions to begin a test run
     StartUp::Button_Start();
     StartUp::Light_Start();
 }
@@ -149,6 +187,7 @@ void StartUp::SwitchCheck()
     LCD.WriteLine("Please press the front right switch");
     while (a==0)
     {
+        //Exit the loop if the switch is pressed and works correctly
         if (FrontRight_bumpswitch.Value()==false)
         {
             a=1;
@@ -159,6 +198,7 @@ void StartUp::SwitchCheck()
     LCD.WriteLine("Please press the front left switch");
     while (a==0)
     {
+        //Exit the loop if the switch is pressed and functioning normally
         if (FrontLeft_bumpswitch.Value()==false)
         {
             a=1;
@@ -177,11 +217,13 @@ void StartUp::Button_Start()
     LCD.WriteLine("Waiting For Start Button");
     while (a==0)
     {
-        if (buttons.LeftPressed())
+        //Start the rest of the program if one of the buttons is pressed
+        if (buttons.LeftPressed()||buttons.MiddlePressed()||buttons.RightPressed())
         {
             a=1;
         }
     }
+    //Tell User that the robot is ready for the light
     LCD.WriteLine("Start Button Pressed");
 
 }
@@ -192,20 +234,29 @@ void StartUp::Light_Start()
 
     int a = 0,b;
     LCD.WriteLine("Waiting for light");
+
+    //Start timing to setup timeout
     b=TimeNow();
+
+    //Start loop to wait for light or timeout
     while (a==0)
     {
+        //Exit loop if light is detected
         if (cds_cell.Value( )<= CDS_Threshold)
         {
             a=1;
+            LCD.WriteLine("Light Detected, Beginning Run");
         }
+        //Exit loop if light is not detected in ten seconds
         else if (TimeNow()-b >= 10)
         {
+            LCD.WriteLine("Light detection timeout, beginning run");
             a=1;
         }
 
     }
-    LCD.WriteLine("Light Detected, Beginning Run");
+
+    //Drive forward to let optosensor clear the start box
     Left_Motor.SetPower(100);
     Right_Motor.SetPower(100);
     Sleep(1.0);
@@ -216,30 +267,42 @@ void StartUp::Light_Start()
 //This function sets the threshold for the central CDS cell
 void StartUp::CDSCell()
 {
+    //Declare variables
     int a=0;
     float lower_value, upper_value;
+
+    //Set the lower value
     LCD.WriteLine("Place robot on course and Turn Light Off");
     while (a==0)
     {
-        LCD.WriteLine("Press left button to set upper bound");
-        if (buttons.LeftPressed())
+        //Tell user to press a button to set bound
+        LCD.WriteLine("Press a button to set upper bound");
+        if (buttons.LeftPressed()||buttons.MiddlePressed()||buttons.RightPressed())
         {
             upper_value = cds_cell.Value();
             a=1;
         }
     }
-    LCD.WriteLine("Please turn the light on");
+
+    //Give user instructions
+    LCD.WriteLine("Please turn the light on and place robot over light");
+
+    //Reindex loop and gather lower bound
     a=0;
     while (a==0)
     {
         LCD.WriteLine("Press left button to set lower bound");
-        if (buttons.LeftPressed())
+        if (buttons.LeftPressed()||buttons.MiddlePressed()||buttons.RightPressed())
         {
             lower_value = cds_cell.Value();
             a=1;
         }
     }
+
+    //Calculate average for real threshold
     CDS_Threshold = (upper_value+lower_value)/2;
+
+    //Tell user value for future reference
     LCD.WriteLine("Value of threshold is");
     LCD.WriteLine(CDS_Threshold);
 }
@@ -247,8 +310,11 @@ void StartUp::CDSCell()
 //This function is used to calibrate the line following optosensor
 void StartUp::OptoCheck()
 {
+    //Declare variables
     int a=0;
     float lower_value, upper_value;
+
+    //Give user instructions and gather value for normal part of course
     LCD.WriteLine("Place optosensor over normal section of course");
     LCD.WriteLine("Press left button to set upper reflectivity value");
     while (a==0)
@@ -260,6 +326,8 @@ void StartUp::OptoCheck()
         }
 
     }
+
+    //Give user instructions and gather reflectivity value for line
     LCD.WriteLine("Place optosensor over line");
     LCD.WriteLine("Press left button to set lower reflectivity value");
     a=0;
@@ -272,7 +340,11 @@ void StartUp::OptoCheck()
         }
 
     }
+
+    //Calculate average value for later use
     Line_Following_Threshold = (upper_value+lower_value)/2;
+
+    //Provide the user with the actual value of the threshold
     LCD.WriteLine("Value of threshold is");
     LCD.WriteLine(Line_Following_Threshold);
 
@@ -290,20 +362,31 @@ Navigation::Navigation()
 //This function travels the specified distance at the provided speed
 void Navigation::DistanceTravelled(float distance, float power, int direction)
 {
+    //Declare variables
     int clicks;
+
+    //Reset Encoders
     Left_Encoder.ResetCounts();
     Right_Encoder.ResetCounts();
+
+    //Calculate Required number of clicks
     clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
+
+    //Use outer selection structure to choose direction of travel based on user input
     if (direction ==forward)
     {
+        //Run loop until calculated number of is reached
         while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
         {
-        Navigation::DriveForward(power);
+            //Turn motors on
+            Navigation::DriveForward(power);
         }
+        //Turn off motors
         Navigation::StopMotors();
     }
     else if (direction == backward)
     {
+        //Run loop until calculated number of is reached and then turn off the motors
         while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
         {
         Navigation::DriveBackward(power);
@@ -315,10 +398,12 @@ void Navigation::DistanceTravelled(float distance, float power, int direction)
 //This function drives until a line is encountered
 void Navigation::DriveToLine(float power)
 {
+    //Supply power to the motors while the front optosensor doesn't detect a line
     while (LineFollowingOptosensor.Value() >= Line_Following_Threshold)
     {
         Navigation::DriveForward(power);
     }
+    //Turn off the motors when it hits a line
     Navigation::StopMotors();
 }
 
@@ -328,20 +413,24 @@ void Navigation::DriveToWall(float power)
     int a=0;
     while (a==0)
     {
+        //Turn off both motors when both switches are against the wall
         if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == false)
         {
             Navigation::StopMotors();
             a=1;
         }
+        //Drive forwards until one or both of the switches are activated
         else if (FrontLeft_bumpswitch.Value() == true && FrontRight_bumpswitch.Value() == true)
         {
             Navigation::DriveForward(power);
         }
+        //If left switch is pressed, drive the right wheel forward and stop the left wheel
         else if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == true)
         {
             Left_Motor.Stop();
             Right_Motor.SetPower((int)power);
         }
+        //If the right switch is pressed, drive the left wheel forward and stop the right wheel
         else if (FrontLeft_bumpswitch.Value() == true && FrontRight_bumpswitch.Value() == false)
         {
             Right_Motor.Stop();
@@ -378,7 +467,7 @@ void Navigation::LeftTurn(float angle)
 //This function stops the robot
 void Navigation::StopMotors()
 {
-
+    //Turn off the motors
     Left_Motor.SetPower(0);
     Right_Motor.SetPower(0);
 }
@@ -386,7 +475,7 @@ void Navigation::StopMotors()
 //This function drives the robot forward
 void Navigation::DriveForward(float power)
 {
-
+    //Turn on the motors and use the compensation number
     Left_Motor.SetPower((int)(power*forward_calibration));
     Right_Motor.SetPower((int)(power*forward_calibration));
 }
@@ -394,7 +483,7 @@ void Navigation::DriveForward(float power)
 //This function drives the robot backward
 void Navigation::DriveBackward(float power)
 {
-
+    //Turn the motors on in reverse and use the compensation number
     Left_Motor.SetPower((int)(power*reverse_calibration*backward));
     Right_Motor.SetPower((int)(power*reverse_calibration*backward));
 }

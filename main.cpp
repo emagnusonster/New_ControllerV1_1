@@ -1,6 +1,6 @@
 //Last edited by: Eric Magnuson
 //Last date edited: 3/24/13
-//Version Number: 3.1
+//Version Number: 3.2
 //Tested since last update: No
 
 //Libraries to be included
@@ -85,10 +85,10 @@ public:
     void DistanceTravelled(float distance, float power, int direction);//Coded, commented
     void DriveToWall(float power);//Coded, commented
     void DriveToLine(float power);//Coded, commented
-    void Right90Turn();//Not Coded Yet
-    void Left90Turn();//Not Coded Yet
-    void RightTurn(float angle);//Not Coded Yet
-    void LeftTurn(float angle);//Not Coded Yet
+    void Right90Turn();//Coded
+    void Left90Turn();//Coded
+    void RightTurn(float angle);//Coded
+    void LeftTurn(float angle);//Coded
     void DriveForward(float power);//Coded, commented
     void DriveBackward(float power);//Coded, commented
     void StopMotors();//Coded, commented
@@ -613,25 +613,49 @@ void Navigation::DriveToWall(float power)
 //This function turns the robot 90 degrees to the right
 void Navigation::Right90Turn()
 {
-
+    Left_Encoder.ResetCounts();
+    while (Left_Encoder.Value()<Right_Turn_Clicks)
+    {
+        Left_Motor.SetPower(50);
+    }
+    Left_Motor.Stop();
 }
 
 //This function turns the robot 90 degrees left
 void Navigation::Left90Turn()
 {
+    Right_Encoder.ResetCounts();
+    while (Right_Encoder.Value()<Left_Turn_Clicks)
+    {
+        Right_Motor.SetPower(50);
+    }
+    Right_Motor.Stop();
 
 }
 
 //This robot turns the robot right to a specified angle
 void Navigation::RightTurn(float angle)
 {
-
+    float revised_clicks;
+    revised_clicks = Right_Turn_Clicks/90.*angle;
+    Left_Encoder.ResetCounts();
+    while (Left_Encoder.Value()<revised_clicks)
+    {
+        Left_Motor.SetPower(50);
+    }
+    Left_Motor.Stop();
 }
 
 //This function turns the robot left to a specified angle
 void Navigation::LeftTurn(float angle)
-{
-
+{float revised_clicks;
+    revised_clicks = Right_Turn_Clicks/90.*angle;
+    Right_Encoder.ResetCounts();
+    while (Right_Encoder.Value()<revised_clicks)
+    {
+        Right_Motor.SetPower(50);
+    }
+    Right_Motor.Stop();
 }
 
 //This function stops the robot

@@ -1,6 +1,6 @@
 //Last edited by: Eric Magnuson
-//Last date edited: 3/23/13
-//Version Number: 2.2
+//Last date edited: 3/24/13
+//Version Number: 3.1
 //Tested since last update: No
 
 //Libraries to be included
@@ -24,6 +24,7 @@
 DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
 DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
 DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_0);
+DigitalInputPin CalibrationSwitch(FEHIO:: P1_4);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor3), Right_Motor(FEHMotor::Motor1);
@@ -37,6 +38,8 @@ float Right_forward_calibration=1;
 float Right_reverse_calibration=1;
 float Left_forward_calibration=1;
 float Left_reverse_calibration=1;
+int Right_Turn_Clicks = 35;
+int Left_Turn_Clicks = 35;
 
 //This class runs first and can be used to test and calibrate sensors
 class StartUp
@@ -66,6 +69,8 @@ public:
     void CDSCellCalibration(); //Coded, commented
     void OptoCalibration();//Coded, commented
     void MotorCompensation();//Coded
+    void LeftTurnCalibration();//Coded
+    void RightTurnCalibration();//Coded
 
 private:
 
@@ -312,6 +317,8 @@ void StartUp::RunAllCalibration()
     StartUp::CDSCellCalibration();
     StartUp::OptoCalibration();
     StartUp::MotorCompensation();
+    StartUp::LeftTurnCalibration();
+    StartUp::RightTurnCalibration();
 }
 //This function sets the threshold for the central CDS cell
 void StartUp::CDSCellCalibration()
@@ -470,6 +477,50 @@ void StartUp::MotorCompensation()
     }
 }
 
+//This Function is used to calibrate Left 90 degree turns
+void StartUp::LeftTurnCalibration()
+{
+    //Reset Encoders
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+
+    //Pause for user
+    Sleep(2.0);
+
+    //Turn robot until switch is pressed
+    while (CalibrationSwitch.Value()==true)
+    {
+        Right_Motor.SetPower(50);
+    }
+    Right_Motor.Stop();
+    Left_Turn_Clicks = Right_Encoder.Counts();
+    LCD.WriteLine("Number of clicks for left turn");
+    LCD.WriteLine(Left_Turn_Clicks);
+    Sleep(2.0);
+}
+
+//This function is ued to calibrate 90 degree right turns
+void StartUp::RightTurnCalibration()
+{
+    //Reset Encoders
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+
+    //Pause for user
+    Sleep(2.0);
+
+    //Turn robot until switch is pressed
+    while (CalibrationSwitch.Value()==true)
+    {
+        Left_Motor.SetPower(50);
+    }
+    Left_Motor.Stop();
+    Right_Turn_Clicks = Right_Encoder.Counts();
+    LCD.WriteLine("Number of clicks for right turn");
+    LCD.WriteLine(Right_Turn_Clicks);
+    Sleep(2.0);
+}
+
 //Start Function Definitions for Navigation Class
 //Constructor Function
 Navigation::Navigation()
@@ -557,6 +608,7 @@ void Navigation::DriveToWall(float power)
 
     }
 }
+
 
 //This function turns the robot 90 degrees to the right
 void Navigation::Right90Turn()

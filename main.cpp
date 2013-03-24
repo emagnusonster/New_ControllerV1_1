@@ -1,6 +1,6 @@
 //Last edited by: Eric Magnuson
 //Last date edited: 3/23/13
-//Version Number: 2.1
+//Version Number: 2.2
 //Tested since last update: No
 
 //Libraries to be included
@@ -110,59 +110,7 @@ StartUp::StartUp()
 {
 
 }
-
-//This function checks the left encoder
-void StartUp::Check_Left_Encoder()
-{
-    //Declare Variables
-    int a;
-
-    //Reset Encoder Counts
-    Left_Encoder.ResetCounts();
-
-    //Turn Motor on
-    Left_Motor.SetPower(50);
-
-    //Start Timing
-    a=TimeNow();
-
-    //Run loop for 5 seconds
-    while (TimeNow()-a<=5)
-    {
-        //Print encoder counts
-        LCD.WriteLine(Left_Encoder.Counts());
-    }
-
-    //Stop Motors
-    Left_Motor.Stop();
-}
-
-//This function checks the right encoder
-void StartUp::Check_Right_Encoder()
-{
-    //Declare Variables
-    int a;
-
-    //Reset Encoder
-    Right_Encoder.ResetCounts();
-
-    //Start Motor
-    Right_Motor.SetPower(50);
-
-    //Start Timing
-    a=TimeNow();
-
-    //Run loop for 5 seconds
-    while (TimeNow()-a<=5)
-    {
-        //Print encoder counts
-        LCD.WriteLine(Right_Encoder.Counts());
-    }
-
-    //Stop motor
-    Right_Motor.Stop();
-}
-
+//Start/Mode Selector Function
 //This function asks the user if calibration is needed, and then runs the course as necessary
 void StartUp::Begin()
 {
@@ -170,13 +118,13 @@ void StartUp::Begin()
     int a=0;
 
     //Ask User for input
-    LCD.WriteLine("Do you need to calibrate?\nPress Left for yes, Right for No");
+    LCD.WriteLine("Do you need to calibrate?\nPress Middle for yes, Right for No");
 
     //Loop until user inputs their selection
     while (a==0)
     {
         //Calibration Condition
-        if (buttons.LeftPressed())
+        if (buttons.MiddlePressed())
         {
             //Start Calibration functions
             StartUp::CDSCellCalibration();
@@ -192,41 +140,15 @@ void StartUp::Begin()
         }
     }
     //Start Functions to begin a test run
+    StartUp::RunAllStart();
+}
+
+//New Run Functions
+void StartUp::RunAllStart()
+{
     StartUp::Button_Start();
     StartUp::Light_Start();
 }
-
-//This function checks to make sure the microswitches are working
-void StartUp::SwitchCheck()
-{
-
-    int a=0;
-    //This function will test the switches
-    LCD.WriteLine("Please press the front right switch");
-    while (a==0)
-    {
-        //Exit the loop if the switch is pressed and works correctly
-        if (FrontRight_bumpswitch.Value()==false)
-        {
-            a=1;
-            LCD.WriteLine("Switch is functioning normally");
-        }
-    }
-    a=0;
-    LCD.WriteLine("Please press the front left switch");
-    while (a==0)
-    {
-        //Exit the loop if the switch is pressed and functioning normally
-        if (FrontLeft_bumpswitch.Value()==false)
-        {
-            a=1;
-            LCD.WriteLine("Switch is functioning normally");
-        }
-    }
-
-
-}
-
 //This function lets the robot wait for the start button to be pressed
 void StartUp::Button_Start()
 {
@@ -282,6 +204,104 @@ void StartUp::Light_Start()
     Right_Motor.SetPower(0);
 }
 
+//Sensor, Motor Check Functions
+//Run All Tests Functions
+void StartUp::RunAllTest()
+{
+
+}
+//This function checks to make sure the microswitches are working
+void StartUp::SwitchCheck()
+{
+
+    int a=0;
+    //This function will test the switches
+    LCD.WriteLine("Please press the front right switch");
+    while (a==0)
+    {
+        //Exit the loop if the switch is pressed and works correctly
+        if (FrontRight_bumpswitch.Value()==false)
+        {
+            a=1;
+            LCD.WriteLine("Switch is functioning normally");
+        }
+    }
+    a=0;
+    LCD.WriteLine("Please press the front left switch");
+    while (a==0)
+    {
+        //Exit the loop if the switch is pressed and functioning normally
+        if (FrontLeft_bumpswitch.Value()==false)
+        {
+            a=1;
+            LCD.WriteLine("Switch is functioning normally");
+        }
+    }
+
+
+}
+//This function checks the right encoder
+void StartUp::Check_Right_Encoder()
+{
+    //Declare Variables
+    int a;
+
+    //Reset Encoder
+    Right_Encoder.ResetCounts();
+
+    //Start Motor
+    Right_Motor.SetPower(50);
+
+    //Start Timing
+    a=TimeNow();
+
+    //Run loop for 5 seconds
+    while (TimeNow()-a<=5)
+    {
+        //Print encoder counts
+        LCD.WriteLine(Right_Encoder.Counts());
+    }
+
+    //Stop motor
+    Right_Motor.Stop();
+}
+//This function checks the left encoder
+void StartUp::Check_Left_Encoder()
+{
+    //Declare Variables
+    int a;
+
+    //Reset Encoder Counts
+    Left_Encoder.ResetCounts();
+
+    //Turn Motor on
+    Left_Motor.SetPower(50);
+
+    //Start Timing
+    a=TimeNow();
+
+    //Run loop for 5 seconds
+    while (TimeNow()-a<=5)
+    {
+        //Print encoder counts
+        LCD.WriteLine(Left_Encoder.Counts());
+    }
+
+    //Stop Motors
+    Left_Motor.Stop();
+}
+//This tests the motors
+void StartUp::MotorTest()
+{
+
+}
+
+//Calibrations Functions
+//Run All Calibration Function
+void StartUp::RunAllCalibration()
+{
+
+}
 //This function sets the threshold for the central CDS cell
 void StartUp::CDSCellCalibration()
 {
@@ -293,9 +313,9 @@ void StartUp::CDSCellCalibration()
     LCD.WriteLine("Place robot on course and Turn Light Off");
     while (a==0)
     {
-        //Tell user to press a button to set bound
-        LCD.WriteLine("Press a button to set upper bound");
-        if (buttons.LeftPressed()||buttons.MiddlePressed()||buttons.RightPressed())
+        //Tell user to press left button to set bound
+        LCD.WriteLine("Press left button to set upper bound");
+        if (buttons.LeftPressed())
         {
             upper_value = cds_cell.Value();
             a=1;
@@ -307,10 +327,10 @@ void StartUp::CDSCellCalibration()
 
     //Reindex loop and gather lower bound
     a=0;
+    LCD.WriteLine("Press right button to set lower bound");
     while (a==0)
     {
-        LCD.WriteLine("Press left button to set lower bound");
-        if (buttons.LeftPressed()||buttons.MiddlePressed()||buttons.RightPressed())
+        if (buttons.RightPressed())
         {
             lower_value = cds_cell.Value();
             a=1;
@@ -347,11 +367,11 @@ void StartUp::OptoCalibration()
 
     //Give user instructions and gather reflectivity value for line
     LCD.WriteLine("Place optosensor over line");
-    LCD.WriteLine("Press left button to set lower reflectivity value");
+    LCD.WriteLine("Press right button to set lower reflectivity value");
     a=0;
     while (a==0)
     {
-        if (buttons.LeftPressed())
+        if (buttons.RightPressed())
         {
             lower_value = LineFollowingOptosensor.Value();
             a=1;
@@ -366,6 +386,11 @@ void StartUp::OptoCalibration()
     LCD.WriteLine("Value of threshold is");
     LCD.WriteLine(Line_Following_Threshold);
 
+
+}
+//This function is used to calculate the compensation factor for the motors
+void StartUp::MotorCompensation()
+{
 
 }
 

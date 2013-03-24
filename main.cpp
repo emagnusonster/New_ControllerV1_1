@@ -33,22 +33,35 @@ FEHEncoder Right_Encoder(FEHIO::P2_1);
 //Threshold variables
 float CDS_Threshold=.14;
 float Line_Following_Threshold;
+float Right_forward_calibration=1;
+float Right_reverse_calibration=1;
+float Left_forward_calibration=1;
+float Left_reverse_calibration=1;
 
 //This class runs first and can be used to test and calibrate sensors
 class StartUp
 {
     //Public Elements
 public:
+    //Constructor Function
     StartUp();
-    void SwitchCheck(); //Coded, commented
-    void CDSCell(); //Coded, commented
+
+    //Function used to ask user for calibration or direct run
     void RunAll(); //Coded, commented
+
+    //Beginning a new run functions
+    void Button_Start();//Coded, commented
+    void Light_Start();//Coded, commented
+
+    //Functions for checking motors and sensors
+    void SwitchCheck(); //Coded, commented
     void Check_Right_Encoder();//Coded, commented
     void Check_Left_Encoder();//Coded, commented
-    void Button_Start();//Coded, commented
-    void OptoCheck();//Coded, commented
-    void Light_Start();//Coded, commented
-    float Optosensor_threshold;
+
+    //Functions for calibrating sensors
+    void CDSCellCalibration(); //Coded, commented
+    void OptoCalibration();//Coded, commented
+
 private:
 
 };
@@ -71,7 +84,7 @@ public:
     void StopMotors();//Coded, commented
     void GrabSled();//Not Coded Yet
 private:
-    float forward_calibration, reverse_calibration;
+
 };
 
 
@@ -161,8 +174,8 @@ void StartUp::RunAll()
         if (buttons.LeftPressed())
         {
             //Start Calibration functions
-            StartUp::CDSCell();
-            StartUp::OptoCheck();
+            StartUp::CDSCellCalibration();
+            StartUp::OptoCalibration();
 
             //Exit Loop
             a=1;
@@ -265,7 +278,7 @@ void StartUp::Light_Start()
 }
 
 //This function sets the threshold for the central CDS cell
-void StartUp::CDSCell()
+void StartUp::CDSCellCalibration()
 {
     //Declare variables
     int a=0;
@@ -308,7 +321,7 @@ void StartUp::CDSCell()
 }
 
 //This function is used to calibrate the line following optosensor
-void StartUp::OptoCheck()
+void StartUp::OptoCalibration()
 {
     //Declare variables
     int a=0;
@@ -355,8 +368,7 @@ void StartUp::OptoCheck()
 //Constructor Function
 Navigation::Navigation()
 {
-    forward_calibration = 1;
-    reverse_calibration = 1;
+
 }
 
 //This function travels the specified distance at the provided speed
@@ -476,14 +488,14 @@ void Navigation::StopMotors()
 void Navigation::DriveForward(float power)
 {
     //Turn on the motors and use the compensation number
-    Left_Motor.SetPower((int)(power*forward_calibration));
-    Right_Motor.SetPower((int)(power*forward_calibration));
+    Left_Motor.SetPower((int)(power*Left_forward_calibration));
+    Right_Motor.SetPower((int)(power*Right_forward_calibration));
 }
 
 //This function drives the robot backward
 void Navigation::DriveBackward(float power)
 {
     //Turn the motors on in reverse and use the compensation number
-    Left_Motor.SetPower((int)(power*reverse_calibration*backward));
-    Right_Motor.SetPower((int)(power*reverse_calibration*backward));
+    Left_Motor.SetPower((int)(power*Left_reverse_calibration*backward));
+    Right_Motor.SetPower((int)(power*Right_reverse_calibration*backward));
 }

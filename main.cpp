@@ -62,10 +62,10 @@ public:
     void MotorTest();//Coded, Commented
 
     //Functions for calibrating sensors
-    void RunAllCalibration();//Not coded yet
+    void RunAllCalibration();//Coded
     void CDSCellCalibration(); //Coded, commented
     void OptoCalibration();//Coded, commented
-    void MotorCompensation();//Not coded yet
+    void MotorCompensation();//Coded
 
 private:
 
@@ -309,7 +309,9 @@ void StartUp::MotorTest()
 //Run All Calibration Function
 void StartUp::RunAllCalibration()
 {
-
+    StartUp::CDSCellCalibration();
+    StartUp::OptoCalibration();
+    StartUp::MotorCompensation();
 }
 //This function sets the threshold for the central CDS cell
 void StartUp::CDSCellCalibration()
@@ -400,7 +402,72 @@ void StartUp::OptoCalibration()
 //This function is used to calculate the compensation factor for the motors
 void StartUp::MotorCompensation()
 {
+    int a=0;
 
+    //Reset Encoder Counts
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+
+    //Run Motors forward for five seconds and record counts
+    Left_Motor.SetPower(100);
+    Right_Motor.SetPower(100);
+    Sleep(5.0);
+    Left_Motor.Stop();
+    Right_Motor.Stop();
+
+    //Run a comparison to calculate forward compensation factor
+    if (Left_Encoder.Counts()<Right_Encoder.Counts())
+    {
+        Right_forward_calibration = (Left_Encoder.Counts()/Right_Encoder.Counts());
+        Left_forward_calibration = 1;
+        LCD.WriteLine("Right forward calibration is ");
+        LCD.WriteLine(Right_forward_calibration);
+        Sleep(2.0);
+    }
+    else if (Left_Encoder.Counts()>Right_Encoder.Counts())
+    {
+        Left_forward_calibration = (Right_Encoder.Counts()/Left_Encoder.Counts());
+        Right_forward_calibration = 1;
+        LCD.WriteLine("Left forward calibration is ");
+        LCD.WriteLine(Left_forward_calibration);
+        Sleep(2.0);
+    }
+    else if (Left_Encoder.Counts()==Right_Encoder.Counts())
+    {
+        LCD.WriteLine("No Calibration Factor Required");
+    }
+    //Reset Encoder Counts
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+
+    //Run Motors forward for five seconds and record counts
+    Left_Motor.SetPower(-100);
+    Right_Motor.SetPower(-100);
+    Sleep(5.0);
+    Left_Motor.Stop();
+    Right_Motor.Stop();
+
+    //Run a comparison to calculate forward compensation factor
+    if (Left_Encoder.Counts()<Right_Encoder.Counts())
+    {
+        Right_reverse_calibration = (Left_Encoder.Counts()/Right_Encoder.Counts());
+        Left_reverse_calibration = 1;
+        LCD.WriteLine("Right backward calibration is ");
+        LCD.WriteLine(Right_reverse_calibration);
+        Sleep(2.0);
+    }
+    else if (Left_Encoder.Counts()>Right_Encoder.Counts())
+    {
+        Left_reverse_calibration = (Right_Encoder.Counts()/Left_Encoder.Counts());
+        Right_reverse_calibration = 1;
+        LCD.WriteLine("Left reverse calibration is ");
+        LCD.WriteLine(Left_reverse_calibration);
+        Sleep(2.0);
+    }
+    else if (Left_Encoder.Counts()==Right_Encoder.Counts())
+    {
+        LCD.WriteLine("No Calibration Factor Required");
+    }
 }
 
 //Start Function Definitions for Navigation Class

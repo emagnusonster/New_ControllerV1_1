@@ -50,16 +50,16 @@ public:
     void Begin(); //Coded, commented, needs to be fixed
 
     //Beginning a new run functions
-    void RunAllStart();//Not coded yet
+    void RunAllStart();//Coded
     void Button_Start();//Coded, commented
     void Light_Start();//Coded, commented
 
     //Functions for checking motors and sensors
-    void RunAllTest();//Not yet coded
+    void RunAllTest();//Coded
     void SwitchCheck(); //Coded, commented
     void Check_Right_Encoder();//Coded, commented
     void Check_Left_Encoder();//Coded, commented
-    void MotorTest();//Not Yet Coded
+    void MotorTest();//Coded, Commented
 
     //Functions for calibrating sensors
     void RunAllCalibration();//Not coded yet
@@ -208,7 +208,10 @@ void StartUp::Light_Start()
 //Run All Tests Functions
 void StartUp::RunAllTest()
 {
-
+    StartUp::SwitchCheck();
+    StartUp::Check_Right_Encoder();
+    StartUp::Check_Left_Encoder();
+    StartUp::MotorTest();
 }
 //This function checks to make sure the microswitches are working
 void StartUp::SwitchCheck()
@@ -293,7 +296,13 @@ void StartUp::Check_Left_Encoder()
 //This tests the motors
 void StartUp::MotorTest()
 {
-
+    //The motors should run forwards if wired correctly
+    LCD.WriteLine("Motors should run forwards");
+    Left_Motor.SetPower(50);
+    Right_Motor.SetPower(50);
+    Sleep(5.0);
+    Left_Motor.Stop();
+    Right_Motor.Stop();
 }
 
 //Calibrations Functions

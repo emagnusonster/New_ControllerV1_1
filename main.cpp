@@ -54,7 +54,7 @@ class Navigation
 {
 public:
     Navigation();
-    void DistanceTravelled(float distance, float power);
+    void DistanceTravelled(float distance, float power, int direction);
     void DriveToWall(float power);
     void DriveToLine(float power);
     void Right90Turn();
@@ -288,17 +288,28 @@ Navigation::Navigation()
 }
 
 //This function travels the specified distance at the provided speed
-void Navigation::DistanceTravelled(float distance, float power)
+void Navigation::DistanceTravelled(float distance, float power, int direction)
 {
     int clicks;
     Left_Encoder.ResetCounts();
     Right_Encoder.ResetCounts();
     clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
-    while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+    if (direction ==forward)
     {
-        Navigation.DriveForward(power);
+        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+        {
+        Navigation::DriveForward(power);
+        }
+        Navigation::StopMotors();
     }
-    Navigation.StopMotors();
+    else if (direction == backward)
+    {
+        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+        {
+        Navigation::DriveBackward(power);
+        }
+        Navigation::StopMotors();
+    }
 }
 
 //This function drives until a line is encountered
@@ -384,6 +395,6 @@ void Navigation::DriveForward(float power)
 void Navigation::DriveBackward(float power)
 {
 
-    Left_Motor.SetPower((int)(power*reverse_calibration));
-    Right_Motor.SetPower((int)(power*reverse_calibration));
+    Left_Motor.SetPower((int)(power*reverse_calibration*backward));
+    Right_Motor.SetPower((int)(power*reverse_calibration*backward));
 }

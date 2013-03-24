@@ -92,7 +92,8 @@ public:
     void DriveForward(float power);//Coded, commented
     void DriveBackward(float power);//Coded, commented
     void StopMotors();//Coded, commented
-    void GrabSled();//Not Coded Yet
+    void RunCourse();//Not Coded yet
+    void GrabSled();//Coded
 private:
 
 };
@@ -102,8 +103,10 @@ int main(void)
 {
     LCD.Clear( FEHLCD::Black );
     LCD.SetFontColor( FEHLCD::White );
-    StartUp NewRun;
-    NewRun.Begin();
+    StartUp BootUp;
+    Navigation NewRun;
+    BootUp.Begin();
+    NewRun.RunCourse();
     return 0;
 }
 
@@ -704,4 +707,22 @@ void Navigation::DriveBackward(float power)
     //Turn the motors on in reverse and use the compensation number
     Left_Motor.SetPower((int)(power*Left_reverse_calibration*backward));
     Right_Motor.SetPower((int)(power*Right_reverse_calibration*backward));
+}
+
+void Navigation::RunCourse()
+{
+    Navigation::DistanceTravelled(5.0,50.0,forward);
+    Navigation::DriveToLine(50.);
+    Navigation::DistanceTravelled(2.3,50.0,forward);
+    Navigation::Left90Turn();
+    Navigation::DistanceTravelled(15.,50.,forward);
+    Navigation::RightTurn(60);
+    Navigation::DriveToWall(50);
+    Navigation::DistanceTravelled(5.,50.,backward);
+    Navigation::Left90Turn();
+    Navigation::DistanceTravelled(20.,50.,backward);
+    Navigation::DistanceTravelled(1.5,50,forward);
+
+
+
 }

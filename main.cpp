@@ -11,6 +11,9 @@
 #define backward  -1
 #define left_motor FEHMotor::Motor3
 #define right_motor FEHMotor::Motor1
+#define clicks_per_turn 32
+#define wheel_diameter 2.75
+#define pi 3.1415926
 
 //Global Variables for IO pins
 DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
@@ -287,7 +290,15 @@ Navigation::Navigation()
 //This function travels the specified distance at the provided speed
 void Navigation::DistanceTravelled(float distance, float power)
 {
-
+    int clicks;
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+    clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
+    while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+    {
+        Navigation.DriveForward(power);
+    }
+    Navigation.StopMotors();
 }
 
 //This function drives until a line is encountered

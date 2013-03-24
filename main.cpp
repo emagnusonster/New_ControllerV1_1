@@ -122,18 +122,16 @@ void StartUp::Begin()
     //Declare variables
     int a=0;
 
-    //Ask User for input
-    LCD.WriteLine("Do you need to calibrate?\nPress Middle for yes, Right for No");
-
-    //Loop until user inputs their selection
+    //Ask User for inputs
+    LCD.WriteLine("Do you need to test sensors");
+    LCD.WriteLine("Press Left for Yes, Right For No");
     while (a==0)
     {
         //Calibration Condition
-        if (buttons.MiddlePressed())
+        if (buttons.LeftPressed())
         {
             //Start Calibration functions
-            StartUp::CDSCellCalibration();
-            StartUp::OptoCalibration();
+            StartUp::RunAllTest();
 
             //Exit Loop
             a=1;
@@ -144,6 +142,32 @@ void StartUp::Begin()
             a=1;
         }
     }
+
+
+    //Ask User for input
+    LCD.WriteLine("Do you need to calibrate?\nPress Left for yes, Middle for No");
+
+
+    //Loop until user inputs their selection
+    a=0;
+    while (a==0)
+    {
+        //Calibration Condition
+        if (buttons.LeftPressed())
+        {
+            //Start Calibration functions
+            StartUp::RunAllCalibration();
+
+            //Exit Loop
+            a=1;
+        }
+        //Start Run condition
+        if (buttons.MiddlePressed())
+        {
+            a=1;
+        }
+    }
+
     //Start Functions to begin a test run
     StartUp::RunAllStart();
 }
@@ -331,9 +355,9 @@ void StartUp::CDSCellCalibration()
     LCD.WriteLine("Place robot on course and Turn Light Off");
     while (a==0)
     {
-        //Tell user to press left button to set bound
-        LCD.WriteLine("Press left button to set upper bound");
-        if (buttons.LeftPressed())
+        //Tell user to press middle button to set bound
+        LCD.WriteLine("Press middle button to set upper bound");
+        if (buttons.MiddlePressed())
         {
             upper_value = cds_cell.Value();
             a=1;

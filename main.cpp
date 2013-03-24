@@ -47,20 +47,25 @@ public:
     StartUp();
 
     //Function used to ask user for calibration or direct run
-    void RunAll(); //Coded, commented
+    void Begin(); //Coded, commented, needs to be fixed
 
     //Beginning a new run functions
+    void RunAllStart();//Not coded yet
     void Button_Start();//Coded, commented
     void Light_Start();//Coded, commented
 
     //Functions for checking motors and sensors
+    void RunAllTest();//Not yet coded
     void SwitchCheck(); //Coded, commented
     void Check_Right_Encoder();//Coded, commented
     void Check_Left_Encoder();//Coded, commented
+    void MotorTest();//Not Yet Coded
 
     //Functions for calibrating sensors
+    void RunAllCalibration();//Not coded yet
     void CDSCellCalibration(); //Coded, commented
     void OptoCalibration();//Coded, commented
+    void MotorCompensation();//Not coded yet
 
 private:
 
@@ -93,7 +98,7 @@ int main(void)
     LCD.Clear( FEHLCD::Black );
     LCD.SetFontColor( FEHLCD::White );
     StartUp NewRun;
-    NewRun.RunAll();
+    NewRun.Begin();
     return 0;
 }
 
@@ -159,7 +164,7 @@ void StartUp::Check_Right_Encoder()
 }
 
 //This function asks the user if calibration is needed, and then runs the course as necessary
-void StartUp::RunAll()
+void StartUp::Begin()
 {
     //Declare variables
     int a=0;
@@ -227,11 +232,11 @@ void StartUp::Button_Start()
 {
 
     int a=0;
-    LCD.WriteLine("Waiting For Start Button");
+    LCD.WriteLine("Waiting For left Button");
     while (a==0)
     {
         //Start the rest of the program if one of the buttons is pressed
-        if (buttons.LeftPressed()||buttons.MiddlePressed()||buttons.RightPressed())
+        if (buttons.LeftPressed())
         {
             a=1;
         }

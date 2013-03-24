@@ -1,3 +1,4 @@
+//Libraries to be included
 #include <FEHLCD.h>
 #include <FEHIO.h>
 #include <FEHUtility.h>
@@ -11,7 +12,7 @@
 #define left_motor FEHMotor::Motor3
 #define right_motor FEHMotor::Motor1
 
-//Global Variables
+//Global Variables for IO pins
 DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
 DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
 DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_0);
@@ -20,10 +21,12 @@ AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor3), Right_Motor(FEHMotor::Motor1);
 FEHEncoder Left_Encoder(FEHIO::P0_1);
 FEHEncoder Right_Encoder(FEHIO::P2_1);
+
+//Threshold variables
 float CDS_Threshold=.14;
 float Line_Following_Threshold;
 
-
+//This class runs first and can be used to test and calibrate sensors
 class StartUp
 {
     //Public Elements
@@ -43,12 +46,14 @@ private:
 };
 
 //Navigation Class Definition
+//This class is used to drive the robot around the course
 class Navigation
 {
 public:
     Navigation();
     void DistanceTravelled(float distance, float power);
     void DriveToWall(float power);
+    void DriveToLine(float power);
     void Right90Turn();
     void Left90Turn();
     void RightTurn(float angle);
@@ -61,7 +66,6 @@ private:
     float forward_calibration, reverse_calibration;
 };
 
-//Function Prototypes
 
 int main(void)
 {
@@ -75,11 +79,13 @@ int main(void)
 
 
 //Begin Function Definitons for StartUp Class
+//Constructor Function
 StartUp::StartUp()
 {
 
 }
 
+//This function checks the left encoder
 void StartUp::Check_Left_Encoder()
 {
     int a;
@@ -94,6 +100,7 @@ void StartUp::Check_Left_Encoder()
     Left_Encoder.ResetCounts();
 }
 
+//This function checks the right encoder
 void StartUp::Check_Right_Encoder()
 {
     int a;
@@ -108,6 +115,7 @@ void StartUp::Check_Right_Encoder()
     Right_Encoder.ResetCounts();
 }
 
+//This function asks the user if calibration is needed, and then runs the course as necessary
 void StartUp::RunAll()
 {
 
@@ -129,6 +137,7 @@ void StartUp::RunAll()
     StartUp::Light_Start();
 }
 
+//This function checks to make sure the microswitches are working
 void StartUp::SwitchCheck()
 {
 
@@ -157,6 +166,7 @@ void StartUp::SwitchCheck()
 
 }
 
+//This function lets the robot wait for the start button to be pressed
 void StartUp::Button_Start()
 {
 
@@ -173,6 +183,7 @@ void StartUp::Button_Start()
 
 }
 
+//This function makes the robot wait until the light is activated or ten seconds have passed
 void StartUp::Light_Start()
 {
 
@@ -199,6 +210,7 @@ void StartUp::Light_Start()
     Right_Motor.SetPower(0);
 }
 
+//This function sets the threshold for the central CDS cell
 void StartUp::CDSCell()
 {
     int a=0;
@@ -229,6 +241,7 @@ void StartUp::CDSCell()
     LCD.WriteLine(CDS_Threshold);
 }
 
+//This function is used to calibrate the line following optosensor
 void StartUp::OptoCheck()
 {
     int a=0;
@@ -264,17 +277,30 @@ void StartUp::OptoCheck()
 }
 
 //Start Function Definitions for Navigation Class
+//Constructor Function
 Navigation::Navigation()
 {
     forward_calibration = 1;
     reverse_calibration = 1;
 }
 
-
+//This function travels the specified distance at the provided speed
 void Navigation::DistanceTravelled(float distance, float power)
 {
 
 }
+
+//This function drives until a line is encountered
+void Navigation::DriveToLine(float power)
+{
+    while (LineFollowingOptosensor.Value() >= Line_Following_Threshold)
+    {
+        Navigation::DriveForward(power);
+    }
+    Navigation::StopMotors();
+}
+
+//This function drives the robot forward until it is square against a wall
 void Navigation::DriveToWall(float power)
 {
     int a=0;
@@ -302,28 +328,40 @@ void Navigation::DriveToWall(float power)
 
     }
 }
+
+//This function turns the robot 90 degrees to the right
 void Navigation::Right90Turn()
 {
 
 }
+
+//This function turns the robot 90 degrees left
 void Navigation::Left90Turn()
 {
 
 }
+
+//This robot turns the robot right to a specified angle
 void Navigation::RightTurn(float angle)
 {
 
 }
+
+//This function turns the robot left to a specified angle
 void Navigation::LeftTurn(float angle)
 {
 
 }
+
+//This function stops the robot
 void Navigation::StopMotors()
 {
 
     Left_Motor.SetPower(0);
     Right_Motor.SetPower(0);
 }
+
+//This function drives the robot forward
 void Navigation::DriveForward(float power)
 {
 
@@ -331,6 +369,7 @@ void Navigation::DriveForward(float power)
     Right_Motor.SetPower((int)(power*forward_calibration));
 }
 
+//This function drives the robot backward
 void Navigation::DriveBackward(float power)
 {
 

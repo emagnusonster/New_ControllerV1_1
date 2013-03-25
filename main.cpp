@@ -23,17 +23,17 @@
 //Global Variables for IO pins
 DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
 DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
-DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_0);
+DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_7);
 DigitalInputPin CalibrationSwitch(FEHIO:: P1_4);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
-FEHMotor Left_Motor(FEHMotor::Motor3), Right_Motor(FEHMotor::Motor1);
+FEHMotor Left_Motor(FEHMotor::Motor0), Right_Motor(FEHMotor::Motor3);
 FEHEncoder Left_Encoder(FEHIO::P0_1);
 FEHEncoder Right_Encoder(FEHIO::P2_1);
 
 //Threshold variables
-float CDS_Threshold=.14;
-float Line_Following_Threshold;
+float CDS_Threshold=1.912;
+float Line_Following_Threshold=1.000;
 float Right_forward_calibration=1;
 float Right_reverse_calibration=1;
 float Left_forward_calibration=1;
@@ -356,10 +356,11 @@ void StartUp::CDSCellCalibration()
 
     //Set the lower value
     LCD.WriteLine("Place robot on course and Turn Light Off");
+    LCD.WriteLine("Press middle button to set upper bound");
     while (a==0)
     {
         //Tell user to press middle button to set bound
-        LCD.WriteLine("Press middle button to set upper bound");
+
         if (buttons.MiddlePressed())
         {
             upper_value = cds_cell.Value();
@@ -388,6 +389,7 @@ void StartUp::CDSCellCalibration()
     //Tell user value for future reference
     LCD.WriteLine("Value of threshold is");
     LCD.WriteLine(CDS_Threshold);
+    Sleep(1.0);
 }
 
 //This function is used to calibrate the line following optosensor
@@ -430,6 +432,7 @@ void StartUp::OptoCalibration()
     //Provide the user with the actual value of the threshold
     LCD.WriteLine("Value of threshold is");
     LCD.WriteLine(Line_Following_Threshold);
+    Sleep(1.0);
 
 
 }

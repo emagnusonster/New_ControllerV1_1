@@ -23,17 +23,17 @@
 //Global Variables for IO pins
 DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
 DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
-DigitalInputPin LineFollowingOptosensor(FEHIO:: P1_7);
+AnalogInputPin LineFollowingOptosensor(FEHIO:: P1_7);
 DigitalInputPin CalibrationSwitch(FEHIO:: P1_4);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor0), Right_Motor(FEHMotor::Motor3);
-FEHEncoder Left_Encoder(FEHIO::P0_1);
-FEHEncoder Right_Encoder(FEHIO::P2_1);
+FEHEncoder Left_Encoder(FEHIO::P0_7);
+FEHEncoder Right_Encoder(FEHIO::P2_0);
 
 //Threshold variables
 float CDS_Threshold=1.912;
-float Line_Following_Threshold=1.000;
+float Line_Following_Threshold=3.282;
 float Right_forward_calibration=1;
 float Right_reverse_calibration=1;
 float Left_forward_calibration=1;
@@ -106,7 +106,8 @@ int main(void)
     StartUp BootUp;
     Navigation NewRun;
     BootUp.Begin();
-    NewRun.RunCourse();
+    //NewRun.RunCourse();
+
     return 0;
 }
 
@@ -229,11 +230,7 @@ void StartUp::Light_Start()
     }
 
     //Drive forward to let optosensor clear the start box
-    Left_Motor.SetPower(100);
-    Right_Motor.SetPower(100);
-    Sleep(1.0);
-    Left_Motor.SetPower(0);
-    Right_Motor.SetPower(0);
+
 }
 
 //Sensor, Motor Check Functions
@@ -407,6 +404,8 @@ void StartUp::OptoCalibration()
         if (buttons.LeftPressed())
         {
             upper_value = LineFollowingOptosensor.Value();
+            LCD.WriteLine(upper_value);
+            Sleep(1.0);
             a=1;
         }
 
@@ -421,6 +420,8 @@ void StartUp::OptoCalibration()
         if (buttons.RightPressed())
         {
             lower_value = LineFollowingOptosensor.Value();
+            LCD.WriteLine(lower_value);
+            Sleep(1.0);
             a=1;
         }
 
@@ -451,19 +452,21 @@ void StartUp::MotorCompensation()
     Sleep(5.0);
     Left_Motor.Stop();
     Right_Motor.Stop();
+    LCD.WriteLine(Left_Encoder.Counts());
+    LCD.WriteLine(Right_Encoder.Counts());
 
     //Run a comparison to calculate forward compensation factor
     if (Left_Encoder.Counts()<Right_Encoder.Counts())
     {
-        Right_forward_calibration = (Left_Encoder.Counts()/Right_Encoder.Counts());
+        Right_forward_calibration = ((float)Left_Encoder.Counts()/(float)Right_Encoder.Counts());
         Left_forward_calibration = 1;
         LCD.WriteLine("Right forward calibration is ");
         LCD.WriteLine(Right_forward_calibration);
         Sleep(2.0);
     }
-    else if (Left_Encoder.Counts()>Right_Encoder.Counts())
+    else if ((float)Left_Encoder.Counts()>(float)Right_Encoder.Counts())
     {
-        Left_forward_calibration = (Right_Encoder.Counts()/Left_Encoder.Counts());
+        Left_forward_calibration = ((float)Right_Encoder.Counts()/(float)Left_Encoder.Counts());
         Right_forward_calibration = 1;
         LCD.WriteLine("Left forward calibration is ");
         LCD.WriteLine(Left_forward_calibration);
@@ -510,6 +513,7 @@ void StartUp::MotorCompensation()
 //This Function is used to calibrate Left 90 degree turns
 void StartUp::LeftTurnCalibration()
 {
+    int a=0;
     //Reset Encoders
     Left_Encoder.ResetCounts();
     Right_Encoder.ResetCounts();
@@ -518,9 +522,13 @@ void StartUp::LeftTurnCalibration()
     Sleep(2.0);
 
     //Turn robot until switch is pressed
-    while (CalibrationSwitch.Value()==true)
+    Right_Motor.SetPower(75);
+    while (a==0)
     {
-        Right_Motor.SetPower(50);
+        if (CalibrationSwitch.Value()==false)
+        {
+            a=1;
+        }
     }
     Right_Motor.Stop();
     Left_Turn_Clicks = Right_Encoder.Counts();
@@ -532,6 +540,7 @@ void StartUp::LeftTurnCalibration()
 //This function is ued to calibrate 90 degree right turns
 void StartUp::RightTurnCalibration()
 {
+    int a=0;
     //Reset Encoders
     Left_Encoder.ResetCounts();
     Right_Encoder.ResetCounts();
@@ -540,9 +549,13 @@ void StartUp::RightTurnCalibration()
     Sleep(2.0);
 
     //Turn robot until switch is pressed
-    while (CalibrationSwitch.Value()==true)
+    Left_Motor.SetPower(75);
+    while (a==0)
     {
-        Left_Motor.SetPower(50);
+        if (CalibrationSwitch.Value()==false)
+        {
+            a=1;
+        }
     }
     Left_Motor.Stop();
     Right_Turn_Clicks = Right_Encoder.Counts();
@@ -597,10 +610,16 @@ void Navigation::DistanceTravelled(float distance, float power, int direction)
 //This function drives until a line is encountered
 void Navigation::DriveToLine(float power)
 {
+    int a=0;
     //Supply power to the motors while the front optosensor doesn't detect a line
-    while (LineFollowingOptosensor.Value() >= Line_Following_Threshold)
+    Navigation::DriveForward(power);
+    while (a==0)
     {
-        Navigation::DriveForward(power);
+        if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+        {
+            a=1;
+        }
+
     }
     //Turn off the motors when it hits a line
     Navigation::StopMotors();
@@ -643,10 +662,15 @@ void Navigation::DriveToWall(float power)
 //This function turns the robot 90 degrees to the right
 void Navigation::Right90Turn()
 {
+    int a=0;
     Left_Encoder.ResetCounts();
-    while (Left_Encoder.Value()<Right_Turn_Clicks)
+    Left_Motor.SetPower(75);
+    while (a==0)
     {
-        Left_Motor.SetPower(50);
+       if (Left_Encoder.Value()>Right_Turn_Clicks)
+       {
+           a=1;
+       }
     }
     Left_Motor.Stop();
 }
@@ -654,10 +678,15 @@ void Navigation::Right90Turn()
 //This function turns the robot 90 degrees left
 void Navigation::Left90Turn()
 {
+    int a=0;
     Right_Encoder.ResetCounts();
-    while (Right_Encoder.Value()<Left_Turn_Clicks)
+    Right_Motor.SetPower(75);
+    while (a==0)
     {
-        Right_Motor.SetPower(50);
+        if (Right_Encoder.Value()>Left_Turn_Clicks)
+        {
+            a=1;
+        }
     }
     Right_Motor.Stop();
 
@@ -667,23 +696,34 @@ void Navigation::Left90Turn()
 void Navigation::RightTurn(float angle)
 {
     float revised_clicks;
+    int a=0;
     revised_clicks = Right_Turn_Clicks/90.*angle;
     Left_Encoder.ResetCounts();
+    Left_Motor.SetPower(75);
     while (Left_Encoder.Value()<revised_clicks)
     {
-        Left_Motor.SetPower(50);
+        if (Left_Encoder.Value()>revised_clicks)
+        {
+            a=1;
+        }
     }
     Left_Motor.Stop();
 }
 
 //This function turns the robot left to a specified angle
 void Navigation::LeftTurn(float angle)
-{float revised_clicks;
+{
+    float revised_clicks;
+    int a=0;
     revised_clicks = Right_Turn_Clicks/90.*angle;
     Right_Encoder.ResetCounts();
-    while (Right_Encoder.Value()<revised_clicks)
+    Right_Motor.SetPower(75);
+    while (a==0)
     {
-        Right_Motor.SetPower(50);
+        if (Right_Encoder.Value()>revised_clicks)
+        {
+           a=1;
+        }
     }
     Right_Motor.Stop();
 }
@@ -692,8 +732,8 @@ void Navigation::LeftTurn(float angle)
 void Navigation::StopMotors()
 {
     //Turn off the motors
-    Left_Motor.SetPower(0);
-    Right_Motor.SetPower(0);
+    Left_Motor.Stop();
+    Right_Motor.Stop();
 }
 
 //This function drives the robot forward
@@ -714,9 +754,9 @@ void Navigation::DriveBackward(float power)
 
 void Navigation::RunCourse()
 {
-    Navigation::DistanceTravelled(5.0,50.0,forward);
-    Navigation::DriveToLine(50.);
-    Navigation::DistanceTravelled(2.3,50.0,forward);
+    Navigation::DistanceTravelled(5.0,100.0,forward);
+    Navigation::DriveToLine(90.);
+    Navigation::DistanceTravelled(2.3,100,forward);
     Navigation::Left90Turn();
     Navigation::DistanceTravelled(15.,50.,forward);
     Navigation::RightTurn(60);

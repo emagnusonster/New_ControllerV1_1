@@ -603,13 +603,13 @@ void Navigation::FollowLine(float distance, float power)
     {
         if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
         {
-            Left_Motor.SetPower(60);
+            Left_Motor.SetPower(70);
             Right_Motor.SetPower(50);
             Sleep(.01);
         }
         else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold)
         {
-            Right_Motor.SetPower(60);
+            Right_Motor.SetPower(70);
             Left_Motor.SetPower(50);
             Sleep(.01);
         }
@@ -812,7 +812,7 @@ void Navigation::DriveBackward(float power)
 void Navigation::DriveToCrevice()
 {
     Navigation::DriveForward(90);
-    while (RightCenterSwitch.Value() == true && LeftCenterSwitch.Value() == true)
+    while (RightCenterSwitch.Value() == true || LeftCenterSwitch.Value() == true)
     {
 
     }
@@ -837,7 +837,9 @@ void Navigation::RunCourse()
     //Navigation::DriveToWall(70.);
     Navigation::DriveToLine(90);
     Sleep(1.5);
-    Navigation::FollowLine(8,90);
+    Navigation::FollowLine(15.,90);
+    Navigation::DistanceTravelled(5.,70.,forward);
+    Navigation:: DistanceTravelled(20,100,backward);
     //Navigation::Left90Turn();
     Sleep(1.1);
     //Navigation::DistanceTravelled(20.,80.,forward);

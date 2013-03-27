@@ -16,7 +16,7 @@
 #define backward  -1
 #define left_motor FEHMotor::Motor3
 #define right_motor FEHMotor::Motor1
-#define clicks_per_turn 32
+#define clicks_per_turn 16
 #define wheel_diameter 2.75
 #define pi 3.1415926
 
@@ -30,16 +30,19 @@ AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor0), Right_Motor(FEHMotor::Motor3);
 FEHEncoder Left_Encoder(FEHIO::P0_7);
 FEHEncoder Right_Encoder(FEHIO::P2_0);
+FEHServo Hook( FEHServo::Servo0 );
 
 //Threshold variables
 float CDS_Threshold=1.912;
-float Line_Following_Threshold=3.282;
-float Right_forward_calibration=1;
-float Right_reverse_calibration=1;
-float Left_forward_calibration=1;
-float Left_reverse_calibration=1;
-int Right_Turn_Clicks = 35;
-int Left_Turn_Clicks = 35;
+float Line_Following_Threshold=3.260;
+float Right_forward_calibration=1.;
+float Right_reverse_calibration=1.;
+float Left_forward_calibration=1.;
+float Left_reverse_calibration=1.;
+int Right_Turn_Clicks = 18;
+int Left_Turn_Clicks = 18;
+
+
 
 //This class runs first and can be used to test and calibrate sensors
 class StartUp
@@ -92,8 +95,8 @@ public:
     void DriveForward(float power);//Coded, commented
     void DriveBackward(float power);//Coded, commented
     void StopMotors();//Coded, commented
-    void RunCourse();//Not Coded yet
-    void GrabSled();//Coded
+    void RunCourse();//Coded
+    void GrabSled();//not Coded
 private:
 
 };
@@ -103,10 +106,17 @@ int main(void)
 {
     LCD.Clear( FEHLCD::Black );
     LCD.SetFontColor( FEHLCD::White );
+    Right_Turn_Clicks = 18;
     StartUp BootUp;
     Navigation NewRun;
+    Hook.SetMax(2184);
+    Hook.SetMin(533);
+
     BootUp.Begin();
-    //NewRun.RunCourse();
+    NewRun.RunCourse();
+
+
+
 
     return 0;
 }
@@ -338,10 +348,12 @@ void StartUp::MotorTest()
 //Run All Calibration Function
 void StartUp::RunAllCalibration()
 {
-    StartUp::CDSCellCalibration();
-    StartUp::OptoCalibration();
-    StartUp::MotorCompensation();
+    //StartUp::CDSCellCalibration();
+    //StartUp::OptoCalibration();
+    //StartUp::MotorCompensation();
+    Sleep(1.0);
     StartUp::LeftTurnCalibration();
+    Sleep(1.0);
     StartUp::RightTurnCalibration();
 }
 //This function sets the threshold for the central CDS cell
@@ -458,7 +470,7 @@ void StartUp::MotorCompensation()
     //Run a comparison to calculate forward compensation factor
     if (Left_Encoder.Counts()<Right_Encoder.Counts())
     {
-        Right_forward_calibration = ((float)Left_Encoder.Counts()/(float)Right_Encoder.Counts());
+        Right_forward_calibration = (float)((float)Left_Encoder.Counts()/(float)Right_Encoder.Counts());
         Left_forward_calibration = 1;
         LCD.WriteLine("Right forward calibration is ");
         LCD.WriteLine(Right_forward_calibration);
@@ -490,7 +502,7 @@ void StartUp::MotorCompensation()
     //Run a comparison to calculate forward compensation factor
     if (Left_Encoder.Counts()<Right_Encoder.Counts())
     {
-        Right_reverse_calibration = (Left_Encoder.Counts()/Right_Encoder.Counts());
+        Right_reverse_calibration = ((float)Left_Encoder.Counts()/(float)Right_Encoder.Counts());
         Left_reverse_calibration = 1;
         LCD.WriteLine("Right backward calibration is ");
         LCD.WriteLine(Right_reverse_calibration);
@@ -498,7 +510,7 @@ void StartUp::MotorCompensation()
     }
     else if (Left_Encoder.Counts()>Right_Encoder.Counts())
     {
-        Left_reverse_calibration = (Right_Encoder.Counts()/Left_Encoder.Counts());
+        Left_reverse_calibration = ((float)Right_Encoder.Counts()/(float)Left_Encoder.Counts());
         Right_reverse_calibration = 1;
         LCD.WriteLine("Left reverse calibration is ");
         LCD.WriteLine(Left_reverse_calibration);
@@ -558,7 +570,7 @@ void StartUp::RightTurnCalibration()
         }
     }
     Left_Motor.Stop();
-    Right_Turn_Clicks = Right_Encoder.Counts();
+    Right_Turn_Clicks = Left_Encoder.Counts();
     LCD.WriteLine("Number of clicks for right turn");
     LCD.WriteLine(Right_Turn_Clicks);
     Sleep(2.0);
@@ -587,24 +599,27 @@ void Navigation::DistanceTravelled(float distance, float power, int direction)
     //Use outer selection structure to choose direction of travel based on user input
     if (direction ==forward)
     {
+        //Turn motors on
+        Navigation::DriveForward(power);
+
         //Run loop until calculated number of is reached
         while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
         {
-            //Turn motors on
-            Navigation::DriveForward(power);
         }
         //Turn off motors
         Navigation::StopMotors();
     }
     else if (direction == backward)
     {
+        Navigation::DriveBackward(power);
         //Run loop until calculated number of is reached and then turn off the motors
         while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
         {
-        Navigation::DriveBackward(power);
+
         }
         Navigation::StopMotors();
     }
+    LCD.WriteLine("Distance travelled");
 }
 
 //This function drives until a line is encountered
@@ -615,6 +630,7 @@ void Navigation::DriveToLine(float power)
     Navigation::DriveForward(power);
     while (a==0)
     {
+        LCD.WriteLine(LineFollowingOptosensor.Value());
         if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
         {
             a=1;
@@ -623,6 +639,7 @@ void Navigation::DriveToLine(float power)
     }
     //Turn off the motors when it hits a line
     Navigation::StopMotors();
+    LCD.WriteLine("Line Found");
 }
 
 //This function drives the robot forward until it is square against a wall
@@ -656,6 +673,7 @@ void Navigation::DriveToWall(float power)
         }
 
     }
+    LCD.WriteLine("Wall Found");
 }
 
 
@@ -667,12 +685,13 @@ void Navigation::Right90Turn()
     Left_Motor.SetPower(75);
     while (a==0)
     {
-       if (Left_Encoder.Value()>Right_Turn_Clicks)
+       if (Left_Encoder.Counts()>Right_Turn_Clicks)
        {
            a=1;
        }
     }
     Left_Motor.Stop();
+    LCD.WriteLine("Turn Completed");
 }
 
 //This function turns the robot 90 degrees left
@@ -681,14 +700,12 @@ void Navigation::Left90Turn()
     int a=0;
     Right_Encoder.ResetCounts();
     Right_Motor.SetPower(75);
-    while (a==0)
+    while (Right_Encoder.Counts()<Left_Turn_Clicks)
     {
-        if (Right_Encoder.Value()>Left_Turn_Clicks)
-        {
-            a=1;
-        }
+
     }
     Right_Motor.Stop();
+    LCD.WriteLine("Turn Completed");
 
 }
 
@@ -700,14 +717,15 @@ void Navigation::RightTurn(float angle)
     revised_clicks = Right_Turn_Clicks/90.*angle;
     Left_Encoder.ResetCounts();
     Left_Motor.SetPower(75);
-    while (Left_Encoder.Value()<revised_clicks)
+    while (a==0)
     {
-        if (Left_Encoder.Value()>revised_clicks)
+        if (Left_Encoder.Counts()>revised_clicks)
         {
             a=1;
         }
     }
     Left_Motor.Stop();
+    LCD.WriteLine("Turn Completed");
 }
 
 //This function turns the robot left to a specified angle
@@ -715,17 +733,18 @@ void Navigation::LeftTurn(float angle)
 {
     float revised_clicks;
     int a=0;
-    revised_clicks = Right_Turn_Clicks/90.*angle;
+    revised_clicks = Left_Turn_Clicks/90.*angle;
     Right_Encoder.ResetCounts();
     Right_Motor.SetPower(75);
     while (a==0)
     {
-        if (Right_Encoder.Value()>revised_clicks)
+        if (Right_Encoder.Counts()>revised_clicks)
         {
            a=1;
         }
     }
     Right_Motor.Stop();
+    LCD.WriteLine("Turn Completed");
 }
 
 //This function stops the robot
@@ -754,17 +773,28 @@ void Navigation::DriveBackward(float power)
 
 void Navigation::RunCourse()
 {
-    Navigation::DistanceTravelled(5.0,100.0,forward);
-    Navigation::DriveToLine(90.);
-    Navigation::DistanceTravelled(2.3,100,forward);
+    Navigation::DistanceTravelled(12.,80.0,forward);
+    Sleep(1.5);
+    Navigation::DriveToLine(60.);
+    Sleep(1.5);
+    Navigation::DistanceTravelled(5.,64.,forward);
+    Sleep(5.);
     Navigation::Left90Turn();
-    Navigation::DistanceTravelled(15.,50.,forward);
+    Sleep(1.5);
+    Navigation::DistanceTravelled(20.,127.,forward);
+    Sleep(1.5);
     Navigation::RightTurn(60);
-    Navigation::DriveToWall(50);
-    Navigation::DistanceTravelled(5.,50.,backward);
+    Sleep(1.1);
+    Navigation::DriveToWall(70.);
+    Sleep(1.1);
+    Navigation::DistanceTravelled(5.,90.,backward);
+    Sleep(1.1);
     Navigation::Left90Turn();
-    Navigation::DistanceTravelled(20.,50.,backward);
-    Navigation::DistanceTravelled(1.5,50,forward);
+    Sleep(1.1);
+    Navigation::DistanceTravelled(20.,80.,backward);
+    Sleep(1.1);
+    Navigation::DistanceTravelled(1.5,80.,forward);
+    Sleep(1.1);
 
 
 

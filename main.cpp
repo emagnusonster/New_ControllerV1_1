@@ -25,6 +25,8 @@ DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
 DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
 AnalogInputPin LineFollowingOptosensor(FEHIO:: P1_7);
 DigitalInputPin CalibrationSwitch(FEHIO:: P1_4);
+DigitalInputPin RightCenterSwitch(FEHIO:: P1_6);
+DigitalInputPin LeftCenterSwitch(FEHIO :: P1_1);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor0), Right_Motor(FEHMotor::Motor3);
@@ -97,6 +99,8 @@ public:
     void StopMotors();//Coded, commented
     void RunCourse();//Coded
     void GrabSled();//not Coded
+    void FollowLine(float distance, float power);//Coded
+    void DriveToCrevice();
 private:
 
 };
@@ -583,6 +587,36 @@ Navigation::Navigation()
 
 }
 
+//Line Following Function
+void Navigation::FollowLine(float distance, float power)
+{
+    int clicks;
+
+    //Reset Encoders
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+
+    //Calculate Required number of clicks
+    clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
+
+    while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+    {
+        if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+        {
+            Left_Motor.SetPower(60);
+            Right_Motor.SetPower(50);
+            Sleep(.01);
+        }
+        else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold)
+        {
+            Right_Motor.SetPower(60);
+            Left_Motor.SetPower(50);
+            Sleep(.01);
+        }
+    }
+    Navigation::StopMotors();
+}
+
 //This function travels the specified distance at the provided speed
 void Navigation::DistanceTravelled(float distance, float power, int direction)
 {
@@ -658,21 +692,25 @@ void Navigation::DriveToWall(float power)
         else if (FrontLeft_bumpswitch.Value() == true && FrontRight_bumpswitch.Value() == true)
         {
             Navigation::DriveForward(power);
+            Sleep(.1);
         }
         //If left switch is pressed, drive the right wheel forward and stop the left wheel
         else if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == true)
         {
             Left_Motor.Stop();
             Right_Motor.SetPower((int)power);
+            Sleep(.1);
         }
         //If the right switch is pressed, drive the left wheel forward and stop the right wheel
         else if (FrontLeft_bumpswitch.Value() == true && FrontRight_bumpswitch.Value() == false)
         {
             Right_Motor.Stop();
             Left_Motor.SetPower((int)power);
+            Sleep(.1);
         }
 
     }
+    Navigation::StopMotors();
     LCD.WriteLine("Wall Found");
 }
 
@@ -771,29 +809,40 @@ void Navigation::DriveBackward(float power)
     Right_Motor.SetPower((int)(power*Right_reverse_calibration*backward));
 }
 
+void Navigation::DriveToCrevice()
+{
+    Navigation::DriveForward(90);
+    while (RightCenterSwitch.Value() == true && LeftCenterSwitch.Value() == true)
+    {
+
+    }
+    Navigation::StopMotors();
+
+}
+
 void Navigation::RunCourse()
 {
-    Navigation::DistanceTravelled(12.,80.0,forward);
+    Navigation::DistanceTravelled(8.,80.0,forward);
     Sleep(1.5);
     Navigation::DriveToLine(60.);
     Sleep(1.5);
     Navigation::DistanceTravelled(5.,64.,forward);
-    Sleep(5.);
+    Sleep(1.5);
     Navigation::Left90Turn();
     Sleep(1.5);
-    Navigation::DistanceTravelled(20.,127.,forward);
+    Navigation::DistanceTravelled(17.,127.,forward);
     Sleep(1.5);
-    Navigation::RightTurn(60);
+    Navigation::LeftTurn(40);
     Sleep(1.1);
-    Navigation::DriveToWall(70.);
+    //Navigation::DriveToWall(70.);
+    Navigation::DriveToLine(90);
+    Sleep(1.5);
+    Navigation::FollowLine(8,90);
+    //Navigation::Left90Turn();
     Sleep(1.1);
-    Navigation::DistanceTravelled(5.,90.,backward);
+    //Navigation::DistanceTravelled(20.,80.,forward);
     Sleep(1.1);
-    Navigation::Left90Turn();
-    Sleep(1.1);
-    Navigation::DistanceTravelled(20.,80.,backward);
-    Sleep(1.1);
-    Navigation::DistanceTravelled(1.5,80.,forward);
+    //Navigation::DistanceTravelled(1.5,80.,backward);
     Sleep(1.1);
 
 

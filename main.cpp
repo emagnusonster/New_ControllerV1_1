@@ -1,7 +1,7 @@
 //Last edited by: Eric Magnuson
-//Last date edited: 3/24/13
-//Version Number: 3.2
-//Tested since last update: No
+//Last date edited: 3/27/13
+//Version Number: 4.1
+//Tested since last update: Yes
 
 //Libraries to be included
 #include <FEHLCD.h>
@@ -10,6 +10,7 @@
 #include <FEHMotor.h>
 #include <FEHServo.h>
 #include <FEHBuzzer.h>
+
 
 //Define Statements
 #define forward  1
@@ -25,8 +26,8 @@ DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
 DigitalInputPin FrontLeft_bumpswitch( FEHIO::P0_0 );
 AnalogInputPin LineFollowingOptosensor(FEHIO:: P1_7);
 DigitalInputPin CalibrationSwitch(FEHIO:: P1_4);
-DigitalInputPin RightCenterSwitch(FEHIO:: P1_6);
-DigitalInputPin LeftCenterSwitch(FEHIO :: P1_1);
+DigitalInputPin RightCenterSwitch(FEHIO:: P2_1);
+DigitalInputPin LeftCenterSwitch(FEHIO :: P0_6);
 ButtonBoard buttons( FEHIO::Bank3 );
 AnalogInputPin cds_cell( FEHIO::P1_0 );
 FEHMotor Left_Motor(FEHMotor::Motor0), Right_Motor(FEHMotor::Motor3);
@@ -36,9 +37,9 @@ FEHServo Hook( FEHServo::Servo0 );
 
 //Threshold variables
 float CDS_Threshold=1.912;
-float Line_Following_Threshold=3.260;
-float Right_forward_calibration=1.;
-float Right_reverse_calibration=1.;
+float Line_Following_Threshold=2.869;
+float Right_forward_calibration=.893;
+float Right_reverse_calibration=.963;
 float Left_forward_calibration=1.;
 float Left_reverse_calibration=1.;
 int Right_Turn_Clicks = 18;
@@ -87,7 +88,7 @@ class Navigation
 {
 public:
     Navigation();
-    void DistanceTravelled(float distance, float power, int direction);//Coded, commented
+    void DistanceTravelled(float distance, float power, int direction, float time);//Coded, commented
     void DriveToWall(float power);//Coded, commented
     void DriveToLine(float power);//Coded, commented
     void Right90Turn();//Coded
@@ -97,7 +98,7 @@ public:
     void DriveForward(float power);//Coded, commented
     void DriveBackward(float power);//Coded, commented
     void StopMotors();//Coded, commented
-    void RunCourse();//Coded
+    void RunCoursePart1();//Coded
     void GrabSled();//not Coded
     void FollowLine(float distance, float power);//Coded
     void DriveToCrevice();
@@ -108,16 +109,13 @@ private:
 
 int main(void)
 {
-    LCD.Clear( FEHLCD::Black );
-    LCD.SetFontColor( FEHLCD::White );
-    Right_Turn_Clicks = 18;
+    LCD.Clear( FEHLCD::Green );
+    LCD.SetFontColor( FEHLCD::Black );
     StartUp BootUp;
     Navigation NewRun;
-    Hook.SetMax(2184);
-    Hook.SetMin(533);
 
     BootUp.Begin();
-    NewRun.RunCourse();
+    NewRun.RunCoursePart1();
 
 
 
@@ -187,6 +185,9 @@ void StartUp::Begin()
     }
 
     //Start Functions to begin a test run
+    Hook.SetMax(2184);
+    Hook.SetMin(533);
+    Hook.SetDegree(180);
     StartUp::RunAllStart();
 }
 
@@ -354,11 +355,11 @@ void StartUp::RunAllCalibration()
 {
     //StartUp::CDSCellCalibration();
     //StartUp::OptoCalibration();
-    //StartUp::MotorCompensation();
+    StartUp::MotorCompensation();
     Sleep(1.0);
-    StartUp::LeftTurnCalibration();
+    //StartUp::LeftTurnCalibration();
     Sleep(1.0);
-    StartUp::RightTurnCalibration();
+    //StartUp::RightTurnCalibration();
 }
 //This function sets the threshold for the central CDS cell
 void StartUp::CDSCellCalibration()
@@ -463,8 +464,8 @@ void StartUp::MotorCompensation()
     Right_Encoder.ResetCounts();
 
     //Run Motors forward for five seconds and record counts
-    Left_Motor.SetPower(100);
-    Right_Motor.SetPower(100);
+    Left_Motor.SetPower(127);
+    Right_Motor.SetPower(127);
     Sleep(5.0);
     Left_Motor.Stop();
     Right_Motor.Stop();
@@ -618,10 +619,11 @@ void Navigation::FollowLine(float distance, float power)
 }
 
 //This function travels the specified distance at the provided speed
-void Navigation::DistanceTravelled(float distance, float power, int direction)
+void Navigation::DistanceTravelled(float distance, float power, int direction, float time)
 {
     //Declare variables
     int clicks;
+    float start_time;
 
     //Reset Encoders
     Left_Encoder.ResetCounts();
@@ -630,6 +632,8 @@ void Navigation::DistanceTravelled(float distance, float power, int direction)
     //Calculate Required number of clicks
     clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
 
+    start_time = TimeNow();
+
     //Use outer selection structure to choose direction of travel based on user input
     if (direction ==forward)
     {
@@ -637,7 +641,7 @@ void Navigation::DistanceTravelled(float distance, float power, int direction)
         Navigation::DriveForward(power);
 
         //Run loop until calculated number of is reached
-        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks  && (TimeNow()-start_time)<=time)
         {
         }
         //Turn off motors
@@ -647,7 +651,7 @@ void Navigation::DistanceTravelled(float distance, float power, int direction)
     {
         Navigation::DriveBackward(power);
         //Run loop until calculated number of is reached and then turn off the motors
-        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
+        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks  && (TimeNow()-start_time)<=time)
         {
 
         }
@@ -820,26 +824,41 @@ void Navigation::DriveToCrevice()
 
 }
 
-void Navigation::RunCourse()
+void Navigation::RunCoursePart1()
 {
-    Navigation::DistanceTravelled(8.,80.0,forward);
+    Navigation::DistanceTravelled(8.,100.0,forward,20);
     Sleep(1.5);
-    Navigation::DriveToLine(60.);
-    Sleep(1.5);
-    Navigation::DistanceTravelled(5.,64.,forward);
-    Sleep(1.5);
+    Navigation::DriveToLine(100.);
+
+    Navigation::DistanceTravelled(5.,80.,forward,20);
+
     Navigation::Left90Turn();
-    Sleep(1.5);
-    Navigation::DistanceTravelled(17.,127.,forward);
-    Sleep(1.5);
-    Navigation::LeftTurn(40);
-    Sleep(1.1);
+
+    Navigation::DistanceTravelled(17.,127.,forward,20);
+
+    Navigation::LeftTurn(70);
+
     //Navigation::DriveToWall(70.);
     Navigation::DriveToLine(90);
+
+    Navigation::FollowLine(17.,90);
+
+    Navigation::DriveToWall(100);
+    //Navigation::DistanceTravelled(4.,127,backward,5);
+    //Navigation::DistanceTravelled(5.,120,forward,5);
+    //Navigation::DistanceTravelled(4.,127,backward,5);
+    //Navigation::DistanceTravelled(5.,120,forward,5);
+
+    Navigation:: DistanceTravelled(21,127,backward,20);
     Sleep(1.5);
-    Navigation::FollowLine(15.,90);
-    Navigation::DistanceTravelled(5.,70.,forward);
-    Navigation:: DistanceTravelled(20,100,backward);
+    Navigation::DistanceTravelled(5.,100,forward,20);
+    Sleep(1.5);
+    Navigation::Left90Turn();
+    Navigation::DistanceTravelled(5,100,forward,20);
+    Navigation::Left90Turn();
+
+    Navigation::DriveToWall(90);
+
     //Navigation::Left90Turn();
     Sleep(1.1);
     //Navigation::DistanceTravelled(20.,80.,forward);

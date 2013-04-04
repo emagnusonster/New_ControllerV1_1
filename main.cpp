@@ -10,6 +10,7 @@
 #include <FEHMotor.h>
 #include <FEHServo.h>
 #include <FEHBuzzer.h>
+#include <FEHMOM.h>
 
 
 //Define Statements
@@ -38,12 +39,12 @@ FEHServo Hook( FEHServo::Servo0 );
 //Threshold variables
 float CDS_Threshold=1.912;
 float Line_Following_Threshold=2.869;
-float Right_forward_calibration=.893;
-float Right_reverse_calibration=.963;
+float Right_forward_calibration=.908;
+float Right_reverse_calibration=.964;
 float Left_forward_calibration=1.;
-float Left_reverse_calibration=1.;
-int Right_Turn_Clicks = 18;
-int Left_Turn_Clicks = 18;
+float Left_reverse_calibration=1;
+int Right_Turn_Clicks = 20;
+int Left_Turn_Clicks = 19;
 
 
 
@@ -89,7 +90,7 @@ class Navigation
 public:
     Navigation();
     void DistanceTravelled(float distance, float power, int direction, float time);//Coded, commented
-    void DriveToWall(float power);//Coded, commented
+    void DriveToWall(float power, float time);//Coded, commented
     void DriveToLine(float power);//Coded, commented
     void Right90Turn();//Coded
     void Left90Turn();//Coded
@@ -113,13 +114,8 @@ int main(void)
     LCD.SetFontColor( FEHLCD::Black );
     StartUp BootUp;
     Navigation NewRun;
-
     BootUp.Begin();
     NewRun.RunCoursePart1();
-
-
-
-
     return 0;
 }
 
@@ -188,6 +184,7 @@ void StartUp::Begin()
     Hook.SetMax(2184);
     Hook.SetMin(533);
     Hook.SetDegree(180);
+    MOM.InitializeMenu();
     StartUp::RunAllStart();
 }
 
@@ -486,7 +483,7 @@ void StartUp::MotorCompensation()
         Left_forward_calibration = ((float)Right_Encoder.Counts()/(float)Left_Encoder.Counts());
         Right_forward_calibration = 1;
         LCD.WriteLine("Left forward calibration is ");
-        LCD.WriteLine(Left_forward_calibration);
+        LCD.Write(Left_forward_calibration);
         Sleep(2.0);
     }
     else if (Left_Encoder.Counts()==Right_Encoder.Counts())
@@ -509,6 +506,7 @@ void StartUp::MotorCompensation()
     {
         Right_reverse_calibration = ((float)Left_Encoder.Counts()/(float)Right_Encoder.Counts());
         Left_reverse_calibration = 1;
+        LCD.Clear();
         LCD.WriteLine("Right backward calibration is ");
         LCD.WriteLine(Right_reverse_calibration);
         Sleep(2.0);
@@ -517,6 +515,7 @@ void StartUp::MotorCompensation()
     {
         Left_reverse_calibration = ((float)Right_Encoder.Counts()/(float)Left_Encoder.Counts());
         Right_reverse_calibration = 1;
+        LCD.Clear();
         LCD.WriteLine("Left reverse calibration is ");
         LCD.WriteLine(Left_reverse_calibration);
         Sleep(2.0);
@@ -632,7 +631,7 @@ void Navigation::DistanceTravelled(float distance, float power, int direction, f
     //Calculate Required number of clicks
     clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
 
-    start_time = TimeNow();
+    start_time = TimeNowSec();
 
     //Use outer selection structure to choose direction of travel based on user input
     if (direction ==forward)
@@ -641,7 +640,7 @@ void Navigation::DistanceTravelled(float distance, float power, int direction, f
         Navigation::DriveForward(power);
 
         //Run loop until calculated number of is reached
-        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks  && (TimeNow()-start_time)<=time)
+        while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks  && (TimeNowSec()-start_time)<=time)
         {
         }
         //Turn off motors
@@ -681,13 +680,15 @@ void Navigation::DriveToLine(float power)
 }
 
 //This function drives the robot forward until it is square against a wall
-void Navigation::DriveToWall(float power)
+void Navigation::DriveToWall(float power, float time)
 {
     int a=0;
+    float start_time;
+    start_time =TimeNowSec();
     while (a==0)
     {
         //Turn off both motors when both switches are against the wall
-        if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == false)
+        if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == false  ||  (start_time-TimeNowSec()) >= time )
         {
             Navigation::StopMotors();
             a=1;
@@ -824,40 +825,58 @@ void Navigation::DriveToCrevice()
 
 }
 
+void Navigation::GrabSled()
+{
+    Hook.SetDegree(70);
+    Sleep(.5);
+}
+
 void Navigation::RunCoursePart1()
 {
-    Navigation::DistanceTravelled(8.,100.0,forward,20);
-    Sleep(1.5);
+    Navigation::DistanceTravelled(10.,100.0,forward,20);
+
     Navigation::DriveToLine(100.);
 
     Navigation::DistanceTravelled(5.,80.,forward,20);
 
+
     Navigation::Left90Turn();
 
-    Navigation::DistanceTravelled(17.,127.,forward,20);
+    Navigation::DistanceTravelled(19.,127.,forward,20);
 
-    Navigation::LeftTurn(70);
+    Navigation::Left90Turn();
 
     //Navigation::DriveToWall(70.);
     Navigation::DriveToLine(90);
 
-    Navigation::FollowLine(17.,90);
-
-    Navigation::DriveToWall(100);
+    Navigation::FollowLine(16.,90);
+    Navigation::LeftTurn(5);
+    Navigation::DriveToWall(127,1.5);
+    Navigation::DistanceTravelled(2,100,backward,1.5);
+    Navigation::DriveToWall(127,1);
     //Navigation::DistanceTravelled(4.,127,backward,5);
     //Navigation::DistanceTravelled(5.,120,forward,5);
     //Navigation::DistanceTravelled(4.,127,backward,5);
     //Navigation::DistanceTravelled(5.,120,forward,5);
 
-    Navigation:: DistanceTravelled(21,127,backward,20);
-    Sleep(1.5);
+    Navigation:: DistanceTravelled(25,100,backward,15);
+
     Navigation::DistanceTravelled(5.,100,forward,20);
-    Sleep(1.5);
+
     Navigation::Left90Turn();
-    Navigation::DistanceTravelled(5,100,forward,20);
+    Navigation::DistanceTravelled(2.5,100,forward,20);
     Navigation::Left90Turn();
 
-    Navigation::DriveToWall(90);
+    Navigation::DriveToWall(90,6);
+    Navigation::DistanceTravelled(3,100,backward,10);
+    Navigation::Left90Turn();
+    Navigation::DriveToWall(100,5);
+    Navigation::DistanceTravelled(19,100,backward,8);
+    Navigation::DistanceTravelled(2,100,forward,4);
+    Navigation::GrabSled();
+    Navigation::DistanceTravelled(2,100,forward,10);
+    Navigation::LeftTurn(145);
+    Navigation::DriveToWall(100,15);
 
     //Navigation::Left90Turn();
     Sleep(1.1);

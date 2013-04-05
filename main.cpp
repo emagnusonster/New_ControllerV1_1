@@ -1,5 +1,5 @@
 //Last edited by: Eric Magnuson
-//Last date edited: 3/27/13
+//Last date edited: 4/5/13
 //Version Number: 4.1
 //Tested since last update: Yes
 
@@ -91,7 +91,7 @@ public:
     Navigation();
     void DistanceTravelled(float distance, float power, int direction, float time);//Coded, commented
     void DriveToWall(float power, float time);//Coded, commented
-    void DriveToLine(float power);//Coded, commented
+    void DriveToLine(float power,float distance);//Coded, commented
     void Right90Turn();//Coded
     void Left90Turn();//Coded
     void RightTurn(float angle);//Coded
@@ -233,7 +233,7 @@ void StartUp::Light_Start()
             LCD.WriteLine("Light Detected, Beginning Run");
         }
         //Exit loop if light is not detected in ten seconds
-        else if (TimeNow()-b >= 10)
+        else if (TimeNow()-b >= 30)
         {
             LCD.WriteLine("Light detection timeout, beginning run");
             a=1;
@@ -660,9 +660,18 @@ void Navigation::DistanceTravelled(float distance, float power, int direction, f
 }
 
 //This function drives until a line is encountered
-void Navigation::DriveToLine(float power)
+void Navigation::DriveToLine(float power,float distance)
 {
-    int a=0;
+    int a=0,clicks;
+    //Reset Encoders
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+
+    //Calculate Required number of clicks
+    clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
+
+
+
     //Supply power to the motors while the front optosensor doesn't detect a line
     Navigation::DriveForward(power);
     while (a==0)
@@ -672,7 +681,25 @@ void Navigation::DriveToLine(float power)
         {
             a=1;
         }
+        else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold && (Left_Encoder.Counts()>= clicks || Right_Encoder.Counts() >= clicks))
+        {
+            a=2;
+        }
+    }
 
+    Navigation::StopMotors();
+    Right_Motor.SetPower(80);
+    if (a==2)
+    {
+        a=0;
+        Right_Motor.SetPower(80);
+        while (a==0)
+        {
+        if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+                {
+                    a=1;
+                }
+    }
     }
     //Turn off the motors when it hits a line
     Navigation::StopMotors();
@@ -688,7 +715,7 @@ void Navigation::DriveToWall(float power, float time)
     while (a==0)
     {
         //Turn off both motors when both switches are against the wall
-        if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == false  ||  (start_time-TimeNowSec()) >= time )
+        if (FrontLeft_bumpswitch.Value() == false && FrontRight_bumpswitch.Value() == false)
         {
             Navigation::StopMotors();
             a=1;
@@ -712,6 +739,12 @@ void Navigation::DriveToWall(float power, float time)
             Right_Motor.Stop();
             Left_Motor.SetPower((int)power);
             Sleep(.1);
+        }
+        else if (TimeNow()-start_time >= time)
+        {
+            LCD.WriteLine("Light detection timeout, beginning run");
+            Navigation::StopMotors();
+            a=1;
         }
 
     }
@@ -827,7 +860,7 @@ void Navigation::DriveToCrevice()
 
 void Navigation::GrabSled()
 {
-    Hook.SetDegree(70);
+    Hook.SetDegree(65);
     Sleep(.5);
 }
 
@@ -835,19 +868,19 @@ void Navigation::RunCoursePart1()
 {
     Navigation::DistanceTravelled(10.,100.0,forward,20);
 
-    Navigation::DriveToLine(100.);
+    Navigation::DriveToLine(100.,10);
 
     Navigation::DistanceTravelled(5.,80.,forward,20);
 
 
     Navigation::Left90Turn();
 
-    Navigation::DistanceTravelled(19.,127.,forward,20);
+    Navigation::DistanceTravelled(20.,127.,forward,20);
 
     Navigation::Left90Turn();
 
     //Navigation::DriveToWall(70.);
-    Navigation::DriveToLine(90);
+    Navigation::DriveToLine(90,14);
 
     Navigation::FollowLine(16.,90);
     Navigation::LeftTurn(5);
@@ -859,7 +892,8 @@ void Navigation::RunCoursePart1()
     //Navigation::DistanceTravelled(4.,127,backward,5);
     //Navigation::DistanceTravelled(5.,120,forward,5);
 
-    Navigation:: DistanceTravelled(25,100,backward,15);
+    Navigation::RightTurn(2);
+    Navigation:: DistanceTravelled(24,127,backward,15);
 
     Navigation::DistanceTravelled(5.,100,forward,20);
 
@@ -872,11 +906,31 @@ void Navigation::RunCoursePart1()
     Navigation::Left90Turn();
     Navigation::DriveToWall(100,5);
     Navigation::DistanceTravelled(19,100,backward,8);
-    Navigation::DistanceTravelled(2,100,forward,4);
+    Navigation::DistanceTravelled(2,60,forward,4);
     Navigation::GrabSled();
     Navigation::DistanceTravelled(2,100,forward,10);
-    Navigation::LeftTurn(145);
+    Navigation::LeftTurn(30);
+    Navigation::DistanceTravelled(1,100,forward,10);
+    Navigation::LeftTurn(30);
+    Navigation::DistanceTravelled(1,100,forward,10);
+
+
+    Navigation::DistanceTravelled(12,127,forward,10);
+    Navigation::Left90Turn();
     Navigation::DriveToWall(100,15);
+    Hook.SetDegree(180);
+    Navigation::DistanceTravelled(10,127,backward,5);
+    Navigation::Left90Turn();
+    Navigation::DriveToLine(100,10);
+    Navigation::Left90Turn();
+    Navigation::DriveToWall(127,5);
+    Navigation::DistanceTravelled(1,100,backward,5);
+    Navigation::LeftTurn(5);
+    Navigation::DistanceTravelled(10,100,backward,10);
+
+
+
+
 
     //Navigation::Left90Turn();
     Sleep(1.1);

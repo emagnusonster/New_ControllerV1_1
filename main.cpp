@@ -18,7 +18,7 @@
 #define backward  -1
 #define left_motor FEHMotor::Motor3
 #define right_motor FEHMotor::Motor1
-#define clicks_per_turn 16
+#define clicks_per_turn 32
 #define wheel_diameter 2.75
 #define pi 3.1415926
 
@@ -40,11 +40,11 @@ FEHServo Hook( FEHServo::Servo0 );
 float CDS_Threshold=1.912;
 float Line_Following_Threshold=2.869;
 float Right_forward_calibration=.908;
-float Right_reverse_calibration=.964;
-float Left_forward_calibration=1.;
-float Left_reverse_calibration=1;
-int Right_Turn_Clicks = 20;
-int Left_Turn_Clicks = 19;
+float Right_reverse_calibration=1;
+float Left_forward_calibration=1;
+float Left_reverse_calibration=.975;
+int Right_Turn_Clicks = 40;
+int Left_Turn_Clicks = 38;
 
 
 
@@ -92,6 +92,7 @@ public:
     void DistanceTravelled(float distance, float power, int direction, float time);//Coded, commented
     void DriveToWall(float power, float time);//Coded, commented
     void DriveToLine(float power,float distance);//Coded, commented
+    void FindLine(float power, float distance);
     void Right90Turn();//Coded
     void Left90Turn();//Coded
     void RightTurn(float angle);//Coded
@@ -192,6 +193,7 @@ void StartUp::Begin()
 void StartUp::RunAllStart()
 {
     StartUp::Button_Start();
+    MOM.Enable();
     StartUp::Light_Start();
 }
 //This function lets the robot wait for the start button to be pressed
@@ -495,9 +497,9 @@ void StartUp::MotorCompensation()
     Right_Encoder.ResetCounts();
 
     //Run Motors forward for five seconds and record counts
-    Left_Motor.SetPower(-100);
-    Right_Motor.SetPower(-100);
-    Sleep(5.0);
+    Left_Motor.SetPower(-127);
+    Right_Motor.SetPower(-127);
+    Sleep(10.0);
     Left_Motor.Stop();
     Right_Motor.Stop();
 
@@ -689,6 +691,8 @@ void Navigation::DriveToLine(float power,float distance)
 
     Navigation::StopMotors();
     Right_Motor.SetPower(80);
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
     if (a==2)
     {
         a=0;
@@ -699,11 +703,101 @@ void Navigation::DriveToLine(float power,float distance)
                 {
                     a=1;
                 }
+        else if (Right_Encoder.Counts()>= Left_Turn_Clicks)
+        {
+            a=3;
+            Navigation::StopMotors();
+        }
+        }
     }
+    Left_Encoder.ResetCounts();
+    Right_Encoder.ResetCounts();
+    if (a==3)
+    {
+        Right_Motor.SetPower(-80);
+        while (a==3)
+        {
+            if (Right_Encoder.Counts()>=Left_Turn_Clicks)
+            {
+                Navigation::StopMotors();
+                a=0;
+            }
+            else if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+            {
+                Navigation::StopMotors();
+                a=1;
+            }
+        }
+        Left_Encoder.ResetCounts();
+        Right_Encoder.ResetCounts();
+
+        Left_Motor.SetPower(80);
+        while (a==0)
+        {
+        if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+                {
+                    a=1;
+                }
+        else if (Left_Encoder.Counts()>= Right_Turn_Clicks)
+        {
+            a=3;
+        }
+        }
     }
     //Turn off the motors when it hits a line
     Navigation::StopMotors();
     LCD.WriteLine("Line Found");
+}
+
+void Navigation::FindLine(float power, float distance)
+{
+        int a=0,clicks, clicks2;
+        //Reset Encoders
+        Left_Encoder.ResetCounts();
+        Right_Encoder.ResetCounts();
+
+        //Calculate Required number of clicks
+        clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
+        clicks2 = 3/(pi*wheel_diameter)*clicks_per_turn;
+
+
+
+        //Supply power to the motors while the front optosensor doesn't detect a line
+        Navigation::DriveForward(power);
+        while (a==0)
+        {
+            LCD.WriteLine(LineFollowingOptosensor.Value());
+            if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+            {
+                a=1;
+            }
+            else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold && (Left_Encoder.Counts()>= clicks || Right_Encoder.Counts() >= clicks))
+            {
+                a=2;
+            }
+        }
+        Navigation::StopMotors();
+        if (a==2)
+        {
+            Navigation::LeftTurn(4);
+            Navigation::DistanceTravelled(3,100,backward,10);
+            while (a==2)
+            {
+                LCD.WriteLine(LineFollowingOptosensor.Value());
+                if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+                {
+                    a=1;
+                    Navigation::StopMotors();
+                }
+                else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold && (Left_Encoder.Counts()>= clicks2 || Right_Encoder.Counts() >= clicks2))
+                {
+                    a=0;
+                    Navigation::StopMotors();
+                }
+
+            }
+
+        }
 }
 
 //This function drives the robot forward until it is square against a wall
@@ -875,14 +969,14 @@ void Navigation::RunCoursePart1()
 
     Navigation::Left90Turn();
 
-    Navigation::DistanceTravelled(20.,127.,forward,20);
+    Navigation::DistanceTravelled(21.,127.,forward,20);
 
     Navigation::Left90Turn();
 
     //Navigation::DriveToWall(70.);
     Navigation::DriveToLine(90,14);
 
-    Navigation::FollowLine(16.,90);
+    Navigation::FollowLine(12.,90);
     Navigation::LeftTurn(5);
     Navigation::DriveToWall(127,1.5);
     Navigation::DistanceTravelled(2,100,backward,1.5);
@@ -892,7 +986,7 @@ void Navigation::RunCoursePart1()
     //Navigation::DistanceTravelled(4.,127,backward,5);
     //Navigation::DistanceTravelled(5.,120,forward,5);
 
-    Navigation::RightTurn(2);
+    //Navigation::RightTurn(2);
     Navigation:: DistanceTravelled(24,127,backward,15);
 
     Navigation::DistanceTravelled(5.,100,forward,20);
@@ -900,13 +994,18 @@ void Navigation::RunCoursePart1()
     Navigation::Left90Turn();
     Navigation::DistanceTravelled(2.5,100,forward,20);
     Navigation::Left90Turn();
+    Navigation::DistanceTravelled(6,100,forward,5);
+    Navigation::LeftTurn(30);
 
     Navigation::DriveToWall(90,6);
     Navigation::DistanceTravelled(3,100,backward,10);
     Navigation::Left90Turn();
     Navigation::DriveToWall(100,5);
-    Navigation::DistanceTravelled(19,100,backward,8);
-    Navigation::DistanceTravelled(2,60,forward,4);
+    Navigation::DistanceTravelled(3,100,backward,10);
+    Navigation::LeftTurn(5);
+    Navigation::DriveToWall(100,6);
+    Navigation::DistanceTravelled(17.5,127,backward,8);
+    //Navigation::DistanceTravelled(2,60,forward,4);
     Navigation::GrabSled();
     Navigation::DistanceTravelled(2,100,forward,10);
     Navigation::LeftTurn(30);
@@ -915,7 +1014,7 @@ void Navigation::RunCoursePart1()
     Navigation::DistanceTravelled(1,100,forward,10);
 
 
-    Navigation::DistanceTravelled(12,127,forward,10);
+    Navigation::DistanceTravelled(15,127,forward,10);
     Navigation::Left90Turn();
     Navigation::DriveToWall(100,15);
     Hook.SetDegree(180);
@@ -925,8 +1024,8 @@ void Navigation::RunCoursePart1()
     Navigation::Left90Turn();
     Navigation::DriveToWall(127,5);
     Navigation::DistanceTravelled(1,100,backward,5);
-    Navigation::LeftTurn(5);
-    Navigation::DistanceTravelled(10,100,backward,10);
+    Navigation::LeftTurn(10);
+    Navigation::DistanceTravelled(15,100,backward,10);
 
 
 

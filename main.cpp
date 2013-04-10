@@ -42,7 +42,7 @@ float Line_Following_Threshold=2.869;
 float Right_forward_calibration=.908;
 float Right_reverse_calibration=1;
 float Left_forward_calibration=1;
-float Left_reverse_calibration=.975;
+float Left_reverse_calibration=.965;
 int Right_Turn_Clicks = 40;
 int Left_Turn_Clicks = 38;
 
@@ -980,6 +980,7 @@ void Navigation::RunCoursePart1()
     Navigation::LeftTurn(5);
     Navigation::DriveToWall(127,1.5);
     Navigation::DistanceTravelled(2,100,backward,1.5);
+    Navigation::RightTurn(5);
     Navigation::DriveToWall(127,1);
     //Navigation::DistanceTravelled(4.,127,backward,5);
     //Navigation::DistanceTravelled(5.,120,forward,5);
@@ -998,13 +999,13 @@ void Navigation::RunCoursePart1()
     Navigation::LeftTurn(30);
 
     Navigation::DriveToWall(90,6);
-    Navigation::DistanceTravelled(3,100,backward,10);
+    Navigation::DistanceTravelled(2.5,100,backward,10);
     Navigation::Left90Turn();
     Navigation::DriveToWall(100,5);
-    Navigation::DistanceTravelled(3,100,backward,10);
-    Navigation::LeftTurn(5);
+    Navigation::DistanceTravelled(5,100,backward,10);
+    Navigation::RightTurn(10);
     Navigation::DriveToWall(100,6);
-    Navigation::DistanceTravelled(17.5,127,backward,8);
+    Navigation::DistanceTravelled(17.5,80,backward,8);
     //Navigation::DistanceTravelled(2,60,forward,4);
     Navigation::GrabSled();
     Navigation::DistanceTravelled(2,100,forward,10);
@@ -1016,12 +1017,15 @@ void Navigation::RunCoursePart1()
 
     Navigation::DistanceTravelled(15,127,forward,10);
     Navigation::Left90Turn();
+    Navigation::LeftTurn(40);
     Navigation::DriveToWall(100,15);
     Hook.SetDegree(180);
     Navigation::DistanceTravelled(10,127,backward,5);
     Navigation::Left90Turn();
+    Navigation::LeftTurn(35);
     Navigation::DriveToLine(100,10);
-    Navigation::Left90Turn();
+    Navigation::DriveToLine(100,0);
+    Navigation::FollowLine(2,100);
     Navigation::DriveToWall(127,5);
     Navigation::DistanceTravelled(1,100,backward,5);
     Navigation::LeftTurn(10);

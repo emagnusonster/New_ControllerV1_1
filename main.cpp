@@ -38,7 +38,7 @@ FEHServo Hook( FEHServo::Servo0 );
 
 //Threshold variables
 float CDS_Threshold=1.912;
-float Line_Following_Threshold=2.869;
+float Line_Following_Threshold=2.862;
 float Right_forward_calibration=.908;
 float Right_reverse_calibration=1;
 float Left_forward_calibration=1;
@@ -63,6 +63,7 @@ public:
     void RunAllStart();//Coded
     void Button_Start();//Coded, commented
     void Light_Start();//Coded, commented
+    void LightStartV2();
 
     //Functions for checking motors and sensors
     void RunAllTest();//Coded
@@ -353,7 +354,7 @@ void StartUp::MotorTest()
 //Run All Calibration Function
 void StartUp::RunAllCalibration()
 {
-    StartUp::CDSCellCalibration();
+    //StartUp::CDSCellCalibration();
     StartUp::OptoCalibration();
     //StartUp::MotorCompensation();
     Sleep(1.0);

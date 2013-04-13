@@ -1,6 +1,6 @@
 //Last edited by: Eric Magnuson
 //Last date edited: 4/5/13
-//Version Number: 4.1
+//Version Number: 6.1
 //Tested since last update: Yes
 
 //Libraries to be included
@@ -178,6 +178,7 @@ void StartUp::Begin()
         if (buttons.MiddlePressed())
         {
             a=1;
+            Sleep(1.);
         }
     }
 
@@ -352,9 +353,9 @@ void StartUp::MotorTest()
 //Run All Calibration Function
 void StartUp::RunAllCalibration()
 {
-    //StartUp::CDSCellCalibration();
-    //StartUp::OptoCalibration();
-    StartUp::MotorCompensation();
+    StartUp::CDSCellCalibration();
+    StartUp::OptoCalibration();
+    //StartUp::MotorCompensation();
     Sleep(1.0);
     //StartUp::LeftTurnCalibration();
     Sleep(1.0);
@@ -954,7 +955,7 @@ void Navigation::DriveToCrevice()
 
 void Navigation::GrabSled()
 {
-    Hook.SetDegree(65);
+    Hook.SetDegree(60);
     Sleep(.5);
 }
 
@@ -976,7 +977,7 @@ void Navigation::RunCoursePart1()
     //Navigation::DriveToWall(70.);
     Navigation::DriveToLine(90,14);
 
-    Navigation::FollowLine(12.,90);
+    Navigation::FollowLine(10.,90);
     Navigation::LeftTurn(5);
     Navigation::DriveToWall(127,1.5);
     Navigation::DistanceTravelled(2,100,backward,1.5);
@@ -995,17 +996,19 @@ void Navigation::RunCoursePart1()
     Navigation::Left90Turn();
     Navigation::DistanceTravelled(2.5,100,forward,20);
     Navigation::Left90Turn();
-    Navigation::DistanceTravelled(6,100,forward,5);
+    Navigation::DistanceTravelled(10,100,forward,5);
     Navigation::LeftTurn(30);
 
-    Navigation::DriveToWall(90,6);
-    Navigation::DistanceTravelled(2.5,100,backward,10);
+    Navigation::DriveToWall(120,6);
+    Navigation::DistanceTravelled(3,100,backward,10);
     Navigation::Left90Turn();
-    Navigation::DriveToWall(100,5);
+    Navigation::DriveToWall(120,5);
     Navigation::DistanceTravelled(5,100,backward,10);
     Navigation::RightTurn(10);
     Navigation::DriveToWall(100,6);
-    Navigation::DistanceTravelled(17.5,80,backward,8);
+    Navigation::DistanceTravelled(1,110,backward,8);
+    Navigation::LeftTurn(8.1);
+    Navigation::DistanceTravelled(16.5,110,backward,8);
     //Navigation::DistanceTravelled(2,60,forward,4);
     Navigation::GrabSled();
     Navigation::DistanceTravelled(2,100,forward,10);
@@ -1015,21 +1018,28 @@ void Navigation::RunCoursePart1()
     Navigation::DistanceTravelled(1,100,forward,10);
 
 
-    Navigation::DistanceTravelled(15,127,forward,10);
+    Navigation::DistanceTravelled(17,127,forward,10);
     Navigation::Left90Turn();
-    Navigation::LeftTurn(40);
+    Navigation::LeftTurn(10);
+    Hook.SetDegree(40);
+    Navigation::DistanceTravelled(5,80,forward,3);
+    //Hook.SetDegree(40);
+    Navigation::DistanceTravelled(5,80,forward,3);
     Navigation::DriveToWall(100,15);
     Hook.SetDegree(180);
     Navigation::DistanceTravelled(10,127,backward,5);
     Navigation::Left90Turn();
-    Navigation::LeftTurn(35);
+    Navigation::LeftTurn(10);
     Navigation::DriveToLine(100,10);
-    Navigation::DriveToLine(100,0);
-    Navigation::FollowLine(2,100);
+    //Navigation::DistanceTravelled(1,100,forward,10);
+    Navigation::Left90Turn();
+    //Navigation::LeftTurn(45);
+    //Navigation::DriveToLine(100,0);
+    //Navigation::FollowLine(2,100);
     Navigation::DriveToWall(127,5);
     Navigation::DistanceTravelled(1,100,backward,5);
-    Navigation::LeftTurn(10);
-    Navigation::DistanceTravelled(15,100,backward,10);
+    Navigation::LeftTurn(33);
+    Navigation::DistanceTravelled(18,100,backward,10);
 
 
 

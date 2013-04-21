@@ -1,7 +1,8 @@
 //Last edited by: Eric Magnuson
-//Last date edited: 4/3/13
-//Version Number: 6.1
+//Last date edited: 4/21/13
+//Version Number: 6.2
 //Tested since last update: Yes
+//Final commented version of competition code
 
 //Libraries to be included
 #include <FEHLCD.h>
@@ -112,12 +113,17 @@ private:
 
 int main(void)
 {
+    //Set up screen
     LCD.Clear( FEHLCD::Green );
     LCD.SetFontColor( FEHLCD::Black );
+    //Initialize classes
     StartUp BootUp;
     Navigation NewRun;
+
+    //Run functions for course
     BootUp.Begin();
     NewRun.RunCoursePart1();
+
     return 0;
 }
 
@@ -184,10 +190,16 @@ void StartUp::Begin()
     }
 
     //Start Functions to begin a test run
+
+    //Set up servo
     Hook.SetMax(2184);
     Hook.SetMin(533);
     Hook.SetDegree(180);
+
+    //Initialize Mom
     MOM.InitializeMenu();
+
+    //Run button and light start functions
     StartUp::RunAllStart();
 }
 
@@ -195,7 +207,10 @@ void StartUp::Begin()
 void StartUp::RunAllStart()
 {
     StartUp::Button_Start();
+
+    //Enable MOM
     MOM.Enable();
+
     StartUp::LightStartV2();
 }
 //This function lets the robot wait for the start button to be pressed
@@ -264,7 +279,7 @@ void StartUp::LightStartV2()
     //Start loop to wait for light or timeout
     while (a==0)
     {
-        //Exit loop if light is detected
+        //Exit loop if change in light is detected
         if (start - cds_cell.Value()>= .5)
         {
             a=1;
@@ -388,6 +403,8 @@ void StartUp::MotorTest()
 //Run All Calibration Function
 void StartUp::RunAllCalibration()
 {
+    //In the final competition, the motors did not need calibration and the CDS cell was utilized differently
+
     //StartUp::CDSCellCalibration();
     StartUp::OptoCalibration();
     //StartUp::MotorCompensation();
@@ -455,8 +472,11 @@ void StartUp::OptoCalibration()
     {
         if (buttons.LeftPressed())
         {
+            //Read in upper value
             upper_value = LineFollowingOptosensor.Value();
             LCD.WriteLine(upper_value);
+
+            //Exit loop
             Sleep(1.0);
             a=1;
         }
@@ -471,6 +491,7 @@ void StartUp::OptoCalibration()
     {
         if (buttons.RightPressed())
         {
+            //Read in lower value
             lower_value = LineFollowingOptosensor.Value();
             LCD.WriteLine(lower_value);
             Sleep(1.0);
@@ -585,6 +606,8 @@ void StartUp::LeftTurnCalibration()
         }
     }
     Right_Motor.Stop();
+
+    //Use detected clicks to calibrate left turn
     Left_Turn_Clicks = Right_Encoder.Counts();
     LCD.WriteLine("Number of clicks for left turn");
     LCD.WriteLine(Left_Turn_Clicks);
@@ -612,6 +635,8 @@ void StartUp::RightTurnCalibration()
         }
     }
     Left_Motor.Stop();
+
+    //Use left encoder to set counts
     Right_Turn_Clicks = Left_Encoder.Counts();
     LCD.WriteLine("Number of clicks for right turn");
     LCD.WriteLine(Right_Turn_Clicks);
@@ -637,14 +662,17 @@ void Navigation::FollowLine(float distance, float power)
     //Calculate Required number of clicks
     clicks = distance/(pi*wheel_diameter)*clicks_per_turn;
 
+    //Run until the timeout distance is travelled
     while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks)
     {
+        //Turn left if robot is on the line
         if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
         {
             Left_Motor.SetPower(70);
             Right_Motor.SetPower(50);
             Sleep(.01);
         }
+        //Turn robot to the right if it is off the line
         else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold)
         {
             Right_Motor.SetPower(70);
@@ -686,6 +714,7 @@ void Navigation::DistanceTravelled(float distance, float power, int direction, f
     }
     else if (direction == backward)
     {
+        //Set motor power
         Navigation::DriveBackward(power);
         //Run loop until calculated number of is reached and then turn off the motors
         while (Left_Encoder.Counts()<= clicks && Right_Encoder.Counts()<=clicks  && (TimeNow()-start_time)<=time)
@@ -715,10 +744,12 @@ void Navigation::DriveToLine(float power,float distance)
     while (a==0)
     {
         LCD.WriteLine(LineFollowingOptosensor.Value());
+        //If the line is detected, stop the robot
         if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
         {
             a=1;
         }
+        //If the robot doesn't detect the line in the specified distance, return error code
         else if (LineFollowingOptosensor.Value()>=Line_Following_Threshold && (Left_Encoder.Counts()>= clicks || Right_Encoder.Counts() >= clicks))
         {
             a=2;
@@ -726,6 +757,8 @@ void Navigation::DriveToLine(float power,float distance)
     }
 
     Navigation::StopMotors();
+
+    //Turn robot left to find line
     Right_Motor.SetPower(80);
     Left_Encoder.ResetCounts();
     Right_Encoder.ResetCounts();
@@ -735,45 +768,57 @@ void Navigation::DriveToLine(float power,float distance)
         Right_Motor.SetPower(80);
         while (a==0)
         {
-        if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
+            //If the line is detected, exit loop and stop robot
+            if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
                 {
                     a=1;
                 }
-        else if (Right_Encoder.Counts()>= Left_Turn_Clicks)
-        {
+
+            else if (Right_Encoder.Counts()>= Left_Turn_Clicks)
+            //If robot doesn't detect line, stop and start turning to the left
+            {
             a=3;
             Navigation::StopMotors();
-        }
+            }
         }
     }
+
+    //Reset encoders
     Left_Encoder.ResetCounts();
     Right_Encoder.ResetCounts();
+
+    //If the robot still hasn't found the line, it starts to turn back in the other direction
     if (a==3)
     {
         Right_Motor.SetPower(-80);
         while (a==3)
         {
+            //Turn back to its original directions
             if (Right_Encoder.Counts()>=Left_Turn_Clicks)
             {
                 Navigation::StopMotors();
                 a=0;
             }
+            //If the robot finds the line, stop the robot
             else if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
             {
                 Navigation::StopMotors();
                 a=1;
             }
         }
+        //Reset encoders
         Left_Encoder.ResetCounts();
         Right_Encoder.ResetCounts();
 
         Left_Motor.SetPower(80);
         while (a==0)
         {
+        //If robot detects line, stop the robot
         if (LineFollowingOptosensor.Value()<=Line_Following_Threshold)
                 {
                     a=1;
                 }
+        //If the robot doesn't, turn it 90 degrees left
         else if (Left_Encoder.Counts()>= Right_Turn_Clicks)
         {
             a=3;
@@ -785,6 +830,7 @@ void Navigation::DriveToLine(float power,float distance)
     LCD.WriteLine("Line Found");
 }
 
+//Not used in competition, see above function which is identical except for a more complicated failsafe
 void Navigation::FindLine(float power, float distance)
 {
         int a=0,clicks, clicks2;
@@ -813,6 +859,7 @@ void Navigation::FindLine(float power, float distance)
             }
         }
         Navigation::StopMotors();
+        //Drive backward if line isn't detected
         if (a==2)
         {
             Navigation::LeftTurn(4);
@@ -870,6 +917,7 @@ void Navigation::DriveToWall(float power, float time)
             Left_Motor.SetPower((int)power);
             Sleep(.1);
         }
+        //Timeout if robot doesn't square quickly enough
         else if (TimeNow()-start_time >= time)
         {
             LCD.WriteLine("Light detection timeout, beginning run");
@@ -889,6 +937,8 @@ void Navigation::Right90Turn()
     int a=0;
     Left_Encoder.ResetCounts();
     Left_Motor.SetPower(75);
+
+    //Use predetermined number of clicks to turn robot 90 degrees
     while (a==0)
     {
        if (Left_Encoder.Counts()>Right_Turn_Clicks)
@@ -896,6 +946,8 @@ void Navigation::Right90Turn()
            a=1;
        }
     }
+
+    //Stop robot
     Left_Motor.Stop();
     LCD.WriteLine("Turn Completed");
 }
@@ -906,10 +958,14 @@ void Navigation::Left90Turn()
     int a=0;
     Right_Encoder.ResetCounts();
     Right_Motor.SetPower(75);
+
+    //Turn robot predetermined number of clicks
     while (Right_Encoder.Counts()<Left_Turn_Clicks)
     {
 
     }
+
+    //Stop robot after turn
     Right_Motor.Stop();
     LCD.WriteLine("Turn Completed");
 
@@ -920,9 +976,13 @@ void Navigation::RightTurn(float angle)
 {
     float revised_clicks;
     int a=0;
+
+    //Calculate clicks using 90 turn to find clicks per degree and then multiply by number of degrees needed
     revised_clicks = Right_Turn_Clicks/90.*angle;
     Left_Encoder.ResetCounts();
     Left_Motor.SetPower(75);
+
+    //Continue looping until robot has turned desired number of clicks
     while (a==0)
     {
         if (Left_Encoder.Counts()>revised_clicks)
@@ -930,6 +990,8 @@ void Navigation::RightTurn(float angle)
             a=1;
         }
     }
+
+    //Stop robot when turn is completed
     Left_Motor.Stop();
     LCD.WriteLine("Turn Completed");
 }
@@ -939,9 +1001,13 @@ void Navigation::LeftTurn(float angle)
 {
     float revised_clicks;
     int a=0;
+
+    //Calculate clicks using 90 turn to find clicks per degree and then multiply by number of degrees needed
     revised_clicks = Left_Turn_Clicks/90.*angle;
     Right_Encoder.ResetCounts();
     Right_Motor.SetPower(75);
+
+    //Continue robot untio number of clicks is reached
     while (a==0)
     {
         if (Right_Encoder.Counts()>revised_clicks)
@@ -949,6 +1015,8 @@ void Navigation::LeftTurn(float angle)
            a=1;
         }
     }
+
+    //Stop robot when turn is completed
     Right_Motor.Stop();
     LCD.WriteLine("Turn Completed");
 }
@@ -977,6 +1045,7 @@ void Navigation::DriveBackward(float power)
     Right_Motor.SetPower((int)(power*Right_reverse_calibration*backward));
 }
 
+//Not used in final competition
 void Navigation::DriveToCrevice()
 {
     Navigation::DriveForward(90);
@@ -988,30 +1057,30 @@ void Navigation::DriveToCrevice()
 
 }
 
+//Grabs the sled
 void Navigation::GrabSled()
 {
+    //Set the servo for grabbing the hook and give time for servo to move
     Hook.SetDegree(60);
     Sleep(.5);
 }
 
+//This function runs the course and contains all of the steps to run the course
 void Navigation::RunCoursePart1()
 {
+    //Leave start box and drive to first line
     Navigation::DistanceTravelled(10.,100.0,forward,20);
-
     Navigation::DriveToLine(100.,10);
 
+    //Drive forward to clear satellite, turn towards and drive up ramp
     Navigation::DistanceTravelled(5.,80.,forward,20);
-
-
     Navigation::Left90Turn();
-
     Navigation::DistanceTravelled(21.,127.,forward,20);
 
+    //Turn towards line, drive towards it, and follow line to crevice
     Navigation::Left90Turn();
-
     //Navigation::DriveToWall(70.);
     Navigation::DriveToLine(90,14);
-
     Navigation::FollowLine(10.,90);
     Navigation::LeftTurn(5);
     Navigation::DriveToWall(127,1.5);
@@ -1022,18 +1091,18 @@ void Navigation::RunCoursePart1()
     //Navigation::DistanceTravelled(5.,120,forward,5);
     //Navigation::DistanceTravelled(4.,127,backward,5);
     //Navigation::DistanceTravelled(5.,120,forward,5);
-
     //Navigation::RightTurn(2);
+
+    //Drive backwards to the stone
     Navigation:: DistanceTravelled(24,127,backward,15);
 
+    //Travel over to other wall, square against it, back up and grab sled
     Navigation::DistanceTravelled(5.,100,forward,20);
-
     Navigation::Left90Turn();
     Navigation::DistanceTravelled(2.5,100,forward,20);
     Navigation::Left90Turn();
     Navigation::DistanceTravelled(10,100,forward,5);
     Navigation::LeftTurn(30);
-
     Navigation::DriveToWall(120,6);
     Navigation::DistanceTravelled(3,100,backward,10);
     Navigation::Left90Turn();
@@ -1046,13 +1115,13 @@ void Navigation::RunCoursePart1()
     Navigation::DistanceTravelled(16.5,110,backward,8);
     //Navigation::DistanceTravelled(2,60,forward,4);
     Navigation::GrabSled();
+
+    //Drive over to stairs and turn down the stairs
     Navigation::DistanceTravelled(2,100,forward,10);
     Navigation::LeftTurn(30);
     Navigation::DistanceTravelled(1,100,forward,10);
     Navigation::LeftTurn(30);
     Navigation::DistanceTravelled(1,100,forward,10);
-
-
     Navigation::DistanceTravelled(15.,127,forward,10);
     Navigation::Left90Turn();
     Navigation::LeftTurn(14);
@@ -1061,6 +1130,8 @@ void Navigation::RunCoursePart1()
     //Hook.SetDegree(40);
     Navigation::DistanceTravelled(5,80,forward,3);
     Navigation::DriveToWall(100,15);
+
+    //Release sled, back up, turn towards satellite
     Hook.SetDegree(180);
     Navigation::DistanceTravelled(10,127,backward,5);
     Navigation::Left90Turn();
@@ -1071,6 +1142,8 @@ void Navigation::RunCoursePart1()
     //Navigation::LeftTurn(45);
     //Navigation::DriveToLine(100,0);
     //Navigation::FollowLine(2,100);
+
+    //Drive into button, reverse towards switch
     Navigation::DriveToWall(127,5);
     Navigation::DistanceTravelled(3,100,backward,5);
     Navigation::LeftTurn(20);

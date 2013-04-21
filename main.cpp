@@ -1,5 +1,5 @@
 //Last edited by: Eric Magnuson
-//Last date edited: 4/5/13
+//Last date edited: 4/3/13
 //Version Number: 6.1
 //Tested since last update: Yes
 
@@ -20,7 +20,7 @@
 #define right_motor FEHMotor::Motor1
 #define clicks_per_turn 32
 #define wheel_diameter 2.75
-#define pi 3.1415926
+#define pi 3.1415926h
 
 //Global Variables for IO pins
 DigitalInputPin FrontRight_bumpswitch( FEHIO::P2_7 );
@@ -196,7 +196,7 @@ void StartUp::RunAllStart()
 {
     StartUp::Button_Start();
     MOM.Enable();
-    StartUp::Light_Start();
+    StartUp::LightStartV2();
 }
 //This function lets the robot wait for the start button to be pressed
 void StartUp::Button_Start()
@@ -232,6 +232,40 @@ void StartUp::Light_Start()
     {
         //Exit loop if light is detected
         if (cds_cell.Value( )<= CDS_Threshold)
+        {
+            a=1;
+            LCD.WriteLine("Light Detected, Beginning Run");
+        }
+        //Exit loop if light is not detected in ten seconds
+        else if (TimeNow()-b >= 30)
+        {
+            LCD.WriteLine("Light detection timeout, beginning run");
+            a=1;
+        }
+
+    }
+
+    //Drive forward to let optosensor clear the start box
+
+}
+
+void StartUp::LightStartV2()
+{
+
+    int a = 0,b;
+    float start;
+    LCD.WriteLine("Waiting for light");
+
+    //Start timing to setup timeout
+    b=TimeNow();
+
+    start = cds_cell.Value();
+
+    //Start loop to wait for light or timeout
+    while (a==0)
+    {
+        //Exit loop if light is detected
+        if (start - cds_cell.Value()>= .5)
         {
             a=1;
             LCD.WriteLine("Light Detected, Beginning Run");
@@ -1008,7 +1042,7 @@ void Navigation::RunCoursePart1()
     Navigation::RightTurn(10);
     Navigation::DriveToWall(100,6);
     Navigation::DistanceTravelled(1,110,backward,8);
-    Navigation::LeftTurn(8.1);
+    Navigation::LeftTurn(12.1);
     Navigation::DistanceTravelled(16.5,110,backward,8);
     //Navigation::DistanceTravelled(2,60,forward,4);
     Navigation::GrabSled();
@@ -1019,9 +1053,9 @@ void Navigation::RunCoursePart1()
     Navigation::DistanceTravelled(1,100,forward,10);
 
 
-    Navigation::DistanceTravelled(17,127,forward,10);
+    Navigation::DistanceTravelled(15.,127,forward,10);
     Navigation::Left90Turn();
-    Navigation::LeftTurn(10);
+    Navigation::LeftTurn(14);
     Hook.SetDegree(40);
     Navigation::DistanceTravelled(5,80,forward,3);
     //Hook.SetDegree(40);
@@ -1038,10 +1072,13 @@ void Navigation::RunCoursePart1()
     //Navigation::DriveToLine(100,0);
     //Navigation::FollowLine(2,100);
     Navigation::DriveToWall(127,5);
-    Navigation::DistanceTravelled(1,100,backward,5);
-    Navigation::LeftTurn(33);
+    Navigation::DistanceTravelled(3,100,backward,5);
+    Navigation::LeftTurn(20);
     Navigation::DistanceTravelled(18,100,backward,10);
+    Navigation::DistanceTravelled(3,127,forward,10);
 
+    Navigation::RightTurn(20);
+    Navigation::DistanceTravelled(12,127,backward,10);
 
 
 
